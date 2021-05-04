@@ -5,6 +5,8 @@ defmodule CreateUser do
   field :name, :string
   field :id, :binary_id, required: false
 
+  derive_event UserCreated
+
   @impl true
   def handle_validate(command, _opts) do
     Ecto.Changeset.validate_format(command, :email, ~r/@/)

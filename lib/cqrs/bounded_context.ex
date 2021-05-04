@@ -1,5 +1,16 @@
 defmodule Cqrs.BoundedContext do
-  alias Cqrs.{BoundedContext, Command, Query}
+  alias Cqrs.BoundedContext
+
+  defmodule InvalidCommandError do
+    defexception [:command]
+    def message(%{command: command}), do: "#{command} is not a Cqrs.Command"
+  end
+
+  defmodule InvalidQueryError do
+    defexception [:query]
+    def message(%{query: query}), do: "#{query} is not a Cqrs.Query"
+  end
+
   @moduledoc """
   Macros to create proxy functions to [commands](`#{Command}`) and [queries](`#{Query}`) in a module.
 
@@ -58,52 +69,113 @@ defmodule Cqrs.BoundedContext do
       iex> {:ok, user} = Users.get_user(email: "chris@example.com")
       ...> %{id: user.id, email: user.email}
       %{id: "052c1984-74c9-522f-858f-f04f1d4cc786", email: "chris@example.com"}
+
+  ### Usage with `#{Commanded}`
+
+    If you are a Commanded user, you have already registered your commands with your commanded routers.
+    Instead of repeating yourself, you can cut down on boilerplate with the `import_commands/1` macro.
+
+    Since `Commanded` is an optional dependency, you need to explicitly import `Cqrs.BoundedContext` to
+    bring the macro into scope.
+
+      defmodule UsersEnhanced do
+        use Cqrs.BoundedContext
+        import Cqrs.BoundedContext
+
+        import_commands CommandedRouter
+
+        query GetUser
+        query GetUser, as: :get_user2
+      end
   """
 
   defmacro __using__(_) do
     quote do
+      Module.register_attribute(__MODULE__, :queries, accumulate: true)
+      Module.register_attribute(__MODULE__, :commands, accumulate: true)
+
       import BoundedContext, only: [command: 1, command: 2, query: 1, query: 2]
+
+      @before_compile BoundedContext
     end
   end
 
-  defmacro query(command, opts \\ []) do
-    function_name = BoundedContext.__function_name__(command, opts)
+  defmacro __before_compile__(_env) do
+    quote do
+      commands = Enum.map(@commands, &BoundedContext.__command_proxy__/1)
+      queries = Enum.map(@queries, &BoundedContext.__query_proxy__/1)
 
+      Module.eval_quoted(__ENV__, commands)
+      Module.eval_quoted(__ENV__, queries)
+
+      Module.delete_attribute(__MODULE__, :queries)
+      Module.delete_attribute(__MODULE__, :commands)
+    end
+  end
+
+  defmacro command(command_module, opts \\ []) do
+    quote location: :keep do
+      _ = unquote(command_module).__info__(:functions)
+
+      unless function_exported?(unquote(command_module), :__command__, 0) do
+        raise InvalidCommandError, command: unquote(command_module)
+      end
+
+      function_name = BoundedContext.__function_name__(unquote(command_module), unquote(opts))
+      @commands {unquote(command_module), function_name}
+    end
+  end
+
+  def __command_proxy__({command_module, function_name}) do
     quote do
       def unquote(function_name)(attrs \\ [], opts \\ []) do
-        BoundedContext.__execute_query__(unquote(command), attrs, opts)
+        BoundedContext.__dispatch_command__(unquote(command_module), attrs, opts)
       end
 
       def unquote(:"#{function_name}!")(attrs \\ [], opts \\ []) do
-        BoundedContext.__execute_query__!(unquote(command), attrs, opts)
+        BoundedContext.__dispatch_command__!(unquote(command_module), attrs, opts)
+      end
+    end
+  end
+
+  defmacro query(query_module, opts \\ []) do
+    quote location: :keep do
+      _ = unquote(query_module).__info__(:functions)
+
+      unless function_exported?(unquote(query_module), :__query__, 0) do
+        raise InvalidQueryError, query: unquote(query_module)
+      end
+
+      function_name = BoundedContext.__function_name__(unquote(query_module), unquote(opts))
+      @queries {unquote(query_module), function_name}
+    end
+  end
+
+  def __query_proxy__({query_module, function_name}) do
+    quote do
+      def unquote(function_name)(attrs \\ [], opts \\ []) do
+        BoundedContext.__execute_query__(unquote(query_module), attrs, opts)
+      end
+
+      def unquote(:"#{function_name}!")(attrs \\ [], opts \\ []) do
+        BoundedContext.__execute_query__!(unquote(query_module), attrs, opts)
       end
 
       def unquote(:"#{function_name}_query")(attrs \\ [], opts \\ []) do
-        BoundedContext.__create_query__(unquote(command), attrs, opts)
+        BoundedContext.__create_query__(unquote(query_module), attrs, opts)
       end
 
       def unquote(:"#{function_name}_query!")(attrs \\ [], opts \\ []) do
-        BoundedContext.__create_query__!(unquote(command), attrs, opts)
+        BoundedContext.__create_query__!(unquote(query_module), attrs, opts)
       end
     end
   end
 
-  defmacro command(command, opts \\ []) do
-    function_name = BoundedContext.__function_name__(command, opts)
-
-    quote do
-      def unquote(function_name)(attrs \\ [], opts \\ []) do
-        BoundedContext.__dispatch_command__(unquote(command), attrs, opts)
-      end
-
-      def unquote(:"#{function_name}!")(attrs \\ [], opts \\ []) do
-        BoundedContext.__dispatch_command__!(unquote(command), attrs, opts)
-      end
-    end
-  end
-
-  def __function_name__({_, _, module}, opts) do
-    [name | _] = Enum.reverse(module)
+  def __function_name__(module, opts) do
+    [name | _] =
+      module
+      |> Module.split()
+      |> Enum.reverse()
 
     default_function_name =
       name
@@ -154,5 +226,24 @@ defmodule Cqrs.BoundedContext do
     attrs
     |> module.new!(opts)
     |> module.execute(opts)
+  end
+
+  if Code.ensure_loaded?(Commanded) do
+    @doc """
+    Imports all of a [Command Router's](`#{Commanded.Commands.Router}`) registered commands.
+    """
+    defmacro import_commands(router) do
+      quote do
+        _ = unquote(router).__info__(:functions)
+
+        unless function_exported?(unquote(router), :__registered_commands__, 0) do
+          raise "#{unquote(router)} is required to be a .#{Commanded.Commands.Router}"
+        end
+
+        unquote(router).__registered_commands__()
+        |> Macro.escape()
+        |> Enum.map(&BoundedContext.command/1)
+      end
+    end
   end
 end

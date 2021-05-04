@@ -152,6 +152,7 @@ defmodule Cqrs.Command do
 
       @behaviour Command
       @before_compile Command
+      def __command__, do: String.trim_leading(to_string(__MODULE__), "Elixir.")
 
       def handle_validate(command, _opts), do: command
       def after_validate(command), do: command

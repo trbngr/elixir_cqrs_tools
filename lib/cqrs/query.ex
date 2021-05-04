@@ -99,6 +99,7 @@ defmodule Cqrs.Query do
 
       @behaviour Query
       @before_compile Query
+      def __query__, do: String.trim_leading(to_string(__MODULE__), "Elixir.")
 
       def handle_validate(changeset, _opts), do: changeset
 
