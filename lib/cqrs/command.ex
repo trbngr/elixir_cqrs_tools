@@ -76,9 +76,16 @@ defmodule Cqrs.Command do
   ## Usage with `Commanded`
 
       defmodule Commanded.Application do
-        def dispatch(command, _opts) do
-          {:ok, UserDeactivated.new(command)}
-        end
+        use Commanded.Application,
+          otp_app: :my_app,
+          default_dispatch_opts: [
+            consistency: :strong,
+            returning: :execution_result
+          ],
+          event_store: [
+            adapter: Commanded.EventStore.Adapters.EventStore,
+            event_store: MyApp.EventStore
+          ]
       end
 
       iex> {:ok, event} = DeactivateUser.new(id: "052c1984-74c9-522f-858f-f04f1d4cc786")
