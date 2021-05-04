@@ -1,17 +1,26 @@
 defmodule CqrsTools.MixProject do
   use Mix.Project
 
+  @version "0.1.0"
+
   def project do
     [
       app: :cqrs_tools,
-      version: "0.1.0",
+      version: @version,
       elixir: "~> 1.10",
       start_permanent: Mix.env() == :prod,
       elixirc_paths: elixirc_paths(Mix.env()),
       deps: deps(),
+      description: "A collection of handy Elixir macros for CQRS applications.",
+      source_url: "https://github.com/trbngr/commanded_messaging",
       docs: [
-        main: "Cqrs"
-      ]
+        main: "Cqrs",
+        source_ref: "v#{@version}"
+      ],
+      package: [
+        licenses: ["MIT"],
+        links: %{"GitHub" => "https://github.com/trbngr/elixir_cqrs_tools"}
+      ],
     ]
   end
 
