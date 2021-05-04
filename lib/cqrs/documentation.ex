@@ -39,6 +39,7 @@ defmodule Cqrs.Documentation do
           field_type =
             case type do
               Ecto.Enum -> opts |> Keyword.fetch!(:values) |> Enum.join(" | ")
+              type when is_tuple(type) -> inspect(type)
               _ -> type
             end
 
