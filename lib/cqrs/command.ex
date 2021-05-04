@@ -186,8 +186,12 @@ defmodule Cqrs.Command do
       embedded_schema do
         Ecto.Schema.field(:created_at, :utc_datetime)
 
-        Enum.map(@schema_fields, fn {name, type, opts} ->
-          Ecto.Schema.field(name, type, opts)
+        Enum.map(@schema_fields, fn
+          {name, :binary_id, opts} ->
+            Ecto.Schema.field(name, Ecto.UUID, opts)
+
+          {name, type, opts} ->
+            Ecto.Schema.field(name, type, opts)
         end)
       end
     end

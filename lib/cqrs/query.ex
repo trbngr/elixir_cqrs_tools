@@ -125,8 +125,12 @@ defmodule Cqrs.Query do
 
       @primary_key false
       embedded_schema do
-        Enum.map(@filters, fn {name, type, opts} ->
-          Ecto.Schema.field(name, type, opts)
+        Enum.map(@filters, fn
+          {name, :binary_id, opts} ->
+            Ecto.Schema.field(name, Ecto.UUID, opts)
+
+          {name, type, opts} ->
+            Ecto.Schema.field(name, type, opts)
         end)
       end
     end
