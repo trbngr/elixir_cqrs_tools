@@ -66,7 +66,7 @@ defmodule Cqrs.Command do
   see `derive_event/2`
 
       defmodule DeactivateUser do
-        use Cqrs.Command, dispatcher: Commanded.Application
+        use Cqrs.Command
 
         field :id, :binary_id
 
@@ -86,6 +86,14 @@ defmodule Cqrs.Command do
             adapter: Commanded.EventStore.Adapters.EventStore,
             event_store: MyApp.EventStore
           ]
+      end
+
+      defmodule DeactivateUser do
+        use Cqrs.Command, dispatcher: Commanded.Application
+
+        field :id, :binary_id
+
+        derive_event UserDeactivated
       end
 
       iex> {:ok, event} = DeactivateUser.new(id: "052c1984-74c9-522f-858f-f04f1d4cc786")
