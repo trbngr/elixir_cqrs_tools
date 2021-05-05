@@ -2,6 +2,10 @@ defmodule Example.Queries.ListUsers do
   use Cqrs.Query
   alias Example.{Repo, ReadModel.User}
 
+  @moduledoc """
+  Generates a list of [users](`#{User}`).
+  """
+
   filter :email, :string
   filter :name, :string
 

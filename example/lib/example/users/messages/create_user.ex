@@ -1,4 +1,7 @@
 defmodule Example.Users.Messages.CreateUser do
+  @moduledoc """
+  Creates a new user.
+  """
   use Cqrs.Command, dispatcher: Example.App
 
   field :name, :string

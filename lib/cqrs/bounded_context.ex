@@ -154,11 +154,19 @@ defmodule Cqrs.BoundedContext do
 
   def __command_proxy__({command_module, function_name, opts}) do
     quote do
+      @doc """
+      #{unquote(command_module).__module_docs__()}
+      #{unquote(command_module).__field_docs__()}
+      """
       def unquote(function_name)(attrs \\ [], opts \\ []) do
         opts = Keyword.merge(unquote(opts), opts)
         BoundedContext.__dispatch_command__(unquote(command_module), attrs, opts)
       end
 
+      @doc """
+      #{unquote(command_module).__module_docs__()}
+      #{unquote(command_module).__field_docs__()}
+      """
       def unquote(:"#{function_name}!")(attrs \\ [], opts \\ []) do
         opts = Keyword.merge(unquote(opts), opts)
         BoundedContext.__dispatch_command__!(unquote(command_module), attrs, opts)
@@ -201,20 +209,39 @@ defmodule Cqrs.BoundedContext do
 
   def __query_proxy__({query_module, function_name}) do
     quote do
-      def unquote(function_name)(attrs \\ [], opts \\ []) do
-        BoundedContext.__execute_query__(unquote(query_module), attrs, opts)
+      @doc """
+      #{unquote(query_module).__module_docs__()}
+      #{unquote(query_module).__filter_docs__()}
+      """
+      def unquote(function_name)(filters \\ [], opts \\ []) do
+        BoundedContext.__execute_query__(unquote(query_module), filters, opts)
       end
 
-      def unquote(:"#{function_name}!")(attrs \\ [], opts \\ []) do
-        BoundedContext.__execute_query__!(unquote(query_module), attrs, opts)
+      @doc """
+      #{unquote(query_module).__module_docs__()}
+      #{unquote(query_module).__filter_docs__()}
+      """
+      def unquote(:"#{function_name}!")(filters \\ [], opts \\ []) do
+        BoundedContext.__execute_query__!(unquote(query_module), filters, opts)
       end
 
-      def unquote(:"#{function_name}_query")(attrs \\ [], opts \\ []) do
-        BoundedContext.__create_query__(unquote(query_module), attrs, opts)
+      query = unquote(query_module).__query__()
+      query_headline_modifier = if query =~ ~r/^[aeiou]/i, do: "an", else: "a"
+
+      @doc """
+      Creates #{query_headline_modifier} [#{query}](`#{unquote(query_module)}`) query without executing it.
+      #{unquote(query_module).__filter_docs__()}
+      """
+      def unquote(:"#{function_name}_query")(filters \\ [], opts \\ []) do
+        BoundedContext.__create_query__(unquote(query_module), filters, opts)
       end
 
-      def unquote(:"#{function_name}_query!")(attrs \\ [], opts \\ []) do
-        BoundedContext.__create_query__!(unquote(query_module), attrs, opts)
+      @doc """
+      Creates #{query_headline_modifier} [#{query}](`#{unquote(query_module)}`) query without executing it.
+      #{unquote(query_module).__filter_docs__()}
+      """
+      def unquote(:"#{function_name}_query!")(filters \\ [], opts \\ []) do
+        BoundedContext.__create_query__!(unquote(query_module), filters, opts)
       end
     end
   end

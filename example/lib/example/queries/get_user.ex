@@ -2,6 +2,10 @@ defmodule Example.Queries.GetUser do
   use Cqrs.Query
   alias Example.{Repo, ReadModel.User}
 
+  @moduledoc """
+  Gets a single [user](`#{User}`).
+  """
+
   filter :id, :binary_id
   filter :email, :string
   filter :name, :string

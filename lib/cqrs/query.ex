@@ -99,7 +99,6 @@ defmodule Cqrs.Query do
 
       @behaviour Query
       @before_compile Query
-      def __query__, do: String.trim_leading(to_string(__MODULE__), "Elixir.")
 
       def handle_validate(changeset, _opts), do: changeset
 
@@ -109,6 +108,7 @@ defmodule Cqrs.Query do
 
   defmacro __before_compile__(_env) do
     quote location: :keep do
+      Query.__introspection__()
       Query.__schema__()
       Query.__constructor__()
       Query.__execute__()
@@ -116,6 +116,18 @@ defmodule Cqrs.Query do
       Module.delete_attribute(__MODULE__, :filters)
       Module.delete_attribute(__MODULE__, :required_filters)
       Module.delete_attribute(__MODULE__, :require_all_filters)
+    end
+  end
+
+  defmacro __introspection__ do
+    quote do
+      require Documentation
+
+      @filter_docs Documentation.field_docs("Filters", @filters, @required_filters)
+
+      def __filter_docs__, do: @filter_docs
+      def __module_docs__, do: @moduledoc
+      def __query__, do: String.trim_leading(to_string(__MODULE__), "Elixir.")
     end
   end
 
@@ -146,7 +158,7 @@ defmodule Cqrs.Query do
       @doc """
       Creates a new `#{__MODULE__} query.`
 
-      #{Documentation.field_docs("Filters", @filters, @required_filters)}
+      #{@filter_docs}
       """
       def new(filters \\ [], opts \\ []) when is_list(opts),
         do: Query.__new__(__MODULE__, filters, @required_filters, opts)
@@ -154,7 +166,7 @@ defmodule Cqrs.Query do
       @doc """
       Creates a new `#{__MODULE__} query.`
 
-      #{Documentation.field_docs("Filters", @filters, @required_filters)}
+      #{@filter_docs}
       """
       def new!(filters \\ [], opts \\ []) when is_list(opts),
         do: Query.__new__!(__MODULE__, filters, @required_filters, opts)

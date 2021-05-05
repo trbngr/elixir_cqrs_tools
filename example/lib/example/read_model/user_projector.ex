@@ -8,11 +8,10 @@ defmodule Example.ReadModel.UserProjector do
   alias Example.Users.Messages.{UserCreated, UserSuspended, UserReinstated}
 
   def handle(%UserCreated{} = event, _metadata) do
-    attrs =
-      event
-      |> Map.from_struct()
-      |> User.changeset()
-      |> Repo.insert!()
+    event
+    |> Map.from_struct()
+    |> User.changeset()
+    |> Repo.insert!()
 
     :ok
   end

@@ -152,7 +152,6 @@ defmodule Cqrs.Command do
 
       @behaviour Command
       @before_compile Command
-      def __command__, do: String.trim_leading(to_string(__MODULE__), "Elixir.")
 
       def handle_validate(command, _opts), do: command
       def after_validate(command), do: command
@@ -165,6 +164,7 @@ defmodule Cqrs.Command do
   defmacro __before_compile__(_env) do
     quote location: :keep do
       Command.__schema__()
+      Command.__introspection__()
       Command.__constructor__()
       Command.__dispatch__()
       Command.__events__()
@@ -197,25 +197,35 @@ defmodule Cqrs.Command do
     end
   end
 
+  defmacro __introspection__ do
+    quote do
+      require Documentation
+
+      @field_docs Documentation.field_docs("Fields", @schema_fields, @required_fields)
+
+      def __field_docs__, do: @field_docs
+      def __module_docs__, do: @moduledoc
+      def __command__, do: String.trim_leading(to_string(__MODULE__), "Elixir.")
+    end
+  end
+
   defmacro __constructor__ do
     quote generated: true, location: :keep do
       # @spec new(maybe_improper_list() | map(), maybe_improper_list()) :: CommandState.t()
       # @spec new!(maybe_improper_list() | map(), maybe_improper_list()) :: %__MODULE__{}
 
-      require Documentation
-
       @doc """
-      Creates a new `#{__MODULE__} query.`
+      Creates a new `#{__MODULE__} command.`
 
-      #{Documentation.field_docs("Fields", @schema_fields, @required_fields)}
+      #{@field_docs}
       """
       def new(attrs \\ [], opts \\ []) when is_list(opts),
         do: Command.__new__(__MODULE__, attrs, @required_fields, opts)
 
       @doc """
-      Creates a new `#{__MODULE__} query.`
+      Creates a new `#{__MODULE__} command.`
 
-      #{Documentation.field_docs("Fields", @schema_fields, @required_fields)}
+      #{@field_docs}
       """
       def new!(attrs \\ [], opts \\ []) when is_list(opts),
         do: Command.__new__!(__MODULE__, attrs, @required_fields, opts)

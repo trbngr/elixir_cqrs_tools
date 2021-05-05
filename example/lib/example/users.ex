@@ -1,7 +1,6 @@
 defmodule Example.Users do
   use Cqrs.BoundedContext
   import Cqrs.BoundedContext
-  import ExecutionResultHelper
 
   alias Example.Users
   alias Example.Users.Messages.CreateUser
