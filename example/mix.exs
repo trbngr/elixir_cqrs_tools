@@ -7,8 +7,7 @@ defmodule Example.MixProject do
       version: "0.1.0",
       elixir: "~> 1.10",
       start_permanent: Mix.env() == :prod,
-      deps: deps(),
-      aliases: aliases()
+      deps: deps()
     ]
   end
 
@@ -27,12 +26,6 @@ defmodule Example.MixProject do
       {:commanded, "~> 1.2"},
       {:ecto, "~> 3.6"},
       {:etso, "~> 0.1.5"}
-    ]
-  end
-
-  defp aliases do
-    [
-      test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"]
     ]
   end
 end

@@ -14,9 +14,4 @@ config :commanded, Commanded.EventStore.Adapters.InMemory,
 config :example, Example.Repo,
   migration_primary_key: [name: :id, type: :binary_id],
   migration_foreign_key: [column: :id, type: :binary_id],
-  migration_timestamps: [type: :utc_datetime],
-  username: "postgres",
-  password: "postgres",
-  database: "example_readstore_dev",
-  hostname: "localhost",
-  pool_size: 10
+  migration_timestamps: [type: :utc_datetime]

@@ -9,7 +9,7 @@ defmodule Example.Users do
   defmodule AfterExecution do
     # This is the only thing I don't like right now
     # I'm not sure how to reference a function from the Users module
-    # in the import_commands, after: [] so a nested module it is
+    # in the import_commands, after: [], so a nested module it is
 
     def load_user(result) do
       with {:ok, id} <- ExecutionResultHelper.aggregate_id(result) do
