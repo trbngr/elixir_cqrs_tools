@@ -12,6 +12,11 @@ defmodule Example.Users.Messages.CreateUser do
   derive_event UserCreated, with: [status: :active]
 
   @impl true
+  def handle_validate(command, _opts) do
+    Ecto.Changeset.validate_format(command, :email, ~r/@/)
+  end
+
+  @impl true
   def after_validate(%{email: email} = command) do
     Map.put(command, :id, UUID.uuid5(:oid, email))
   end

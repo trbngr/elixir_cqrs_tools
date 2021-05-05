@@ -1,6 +1,11 @@
 import Config
 
-config :example, ecto_repos: [Example.Repo]
+config :example, ExampleApi.Endpoint,
+  pubsub_server: Example.PubSub,
+  http: [port: 4000],
+  url: [host: "localhost"]
+
+config :phoenix, :json_library, Jason
 
 config :example, Example.App,
   event_store: [
@@ -11,7 +16,6 @@ config :example, Example.App,
 config :commanded, Commanded.EventStore.Adapters.InMemory,
   serializer: Commanded.Serialization.JsonSerializer
 
-config :example, Example.Repo,
-  migration_primary_key: [name: :id, type: :binary_id],
-  migration_foreign_key: [column: :id, type: :binary_id],
-  migration_timestamps: [type: :utc_datetime]
+if config_env() == :test do
+  config :logger, :console, level: :warn
+end

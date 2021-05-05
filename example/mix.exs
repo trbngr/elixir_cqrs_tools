@@ -25,7 +25,14 @@ defmodule Example.MixProject do
       {:cqrs_tools, path: ".."},
       {:commanded, "~> 1.2"},
       {:ecto, "~> 3.6"},
-      {:etso, "~> 0.1.5"}
+      {:jason, "~> 1.2"},
+      {:etso, "~> 0.1.5"},
+      {:phoenix, "~> 1.5"},
+      {:corsica, "~> 1.1"},
+      {:plug_cowboy, "~> 2.4"},
+      {:absinthe, "~> 1.6"},
+      {:absinthe_plug, "~> 1.5"},
+      {:absinthe_relay, "~> 1.5"}
     ]
   end
 end

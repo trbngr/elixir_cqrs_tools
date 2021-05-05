@@ -8,6 +8,7 @@ defmodule Example.Queries.ListUsers do
 
   filter :email, :string
   filter :name, :string
+  filter :status, Ecto.Enum, values: [:active, :suspended]
 
   @impl true
   def handle_create(filters, opts) do
@@ -19,6 +20,7 @@ defmodule Example.Queries.ListUsers do
     Enum.reduce(filters, query, fn
       {:email, email}, query -> from q in query, where: q.email == ^email
       {:name, name}, query -> from q in query, where: q.name == ^name
+      {:status, status}, query -> from q in query, where: q.status == ^status
       _, query -> query
     end)
   end

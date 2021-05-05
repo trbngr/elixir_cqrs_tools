@@ -8,20 +8,7 @@ defmodule Example.ReadModel do
   end
 
   def init(_opts) do
-    children = [
-      UserProjector
-    ]
-
+    children = [UserProjector]
     Supervisor.init(children, strategy: :one_for_one)
-  end
-
-  defmodule Schema do
-    defmacro __using__(_) do
-      quote do
-        use Ecto.Schema
-        @primary_key {:id, :binary_id, autogenerate: false}
-        @foreign_key_type :binary_id
-      end
-    end
   end
 end
