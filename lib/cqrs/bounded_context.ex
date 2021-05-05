@@ -113,6 +113,24 @@ defmodule Cqrs.BoundedContext do
     end
   end
 
+  @doc """
+  Creates proxy functions to dispatch this command module.
+
+  ## Functions created
+
+  When given `CreateUser`
+
+  * `create_user!/0`
+  * `create_user!/1`
+  * `create_user!/2`
+  * `create_user/0`
+  * `create_user/1`
+  * `create_user/2`
+
+  ## Options
+
+  * `:after` - A function of one arity to run with the execution result.
+  """
   defmacro command(command_module, opts \\ []) do
     quote location: :keep do
       _ = unquote(command_module).__info__(:functions)
@@ -122,22 +140,52 @@ defmodule Cqrs.BoundedContext do
       end
 
       function_name = BoundedContext.__function_name__(unquote(command_module), unquote(opts))
-      @commands {unquote(command_module), function_name}
+
+      then =
+        case Keyword.get(unquote(opts), :after, []) do
+          [] -> &Function.identity/1
+          fun when is_function(fun, 1) -> fun
+          list when is_list(list) -> Keyword.get(list, function_name, &Function.identity/1)
+        end
+
+      @commands {unquote(command_module), function_name, [then: then]}
     end
   end
 
-  def __command_proxy__({command_module, function_name}) do
+  def __command_proxy__({command_module, function_name, opts}) do
     quote do
       def unquote(function_name)(attrs \\ [], opts \\ []) do
+        opts = Keyword.merge(unquote(opts), opts)
         BoundedContext.__dispatch_command__(unquote(command_module), attrs, opts)
       end
 
       def unquote(:"#{function_name}!")(attrs \\ [], opts \\ []) do
+        opts = Keyword.merge(unquote(opts), opts)
         BoundedContext.__dispatch_command__!(unquote(command_module), attrs, opts)
       end
     end
   end
 
+  @doc """
+  Creates proxy functions to create and execute the give query.
+
+  ## Functions created
+
+  When given `ListUsers`
+
+  * `list_users!/0`
+  * `list_users!/1`
+  * `list_users!/2`
+  * `list_users/0`
+  * `list_users/1`
+  * `list_users/2`
+  * `list_users_query!/0`
+  * `list_users_query!/1`
+  * `list_users_query!/2`
+  * `list_users_query/0`
+  * `list_users_query/1`
+  * `list_users_query/2`
+  """
   defmacro query(query_module, opts \\ []) do
     quote location: :keep do
       _ = unquote(query_module).__info__(:functions)
@@ -231,8 +279,22 @@ defmodule Cqrs.BoundedContext do
   if Code.ensure_loaded?(Commanded) do
     @doc """
     Imports all of a [Command Router's](`#{Commanded.Commands.Router}`) registered commands.
+
+    ## Options
+
+    * `:only` - Restrict importing to only the commands listed
+    * `:except` - Imports commands except those listed
+    * `:after` - a list of function names and a function of one arity to run with the execution result
+
+    ### Example
+        import_commands Example.Users.Router,
+          except: [CreateUser],
+          after: [
+            reinstate_user: &AfterExecution.load_user/1,
+            suspend_user: &AfterExecution.load_user/1
+          ]
     """
-    defmacro import_commands(router) do
+    defmacro import_commands(router, opts \\ []) do
       quote do
         _ = unquote(router).__info__(:functions)
 
@@ -240,9 +302,19 @@ defmodule Cqrs.BoundedContext do
           raise "#{unquote(router)} is required to be a .#{Commanded.Commands.Router}"
         end
 
-        unquote(router).__registered_commands__()
-        |> Macro.escape()
-        |> Enum.map(&BoundedContext.command/1)
+        only = Keyword.get(unquote(opts), :only, [])
+        except = Keyword.get(unquote(opts), :except, [])
+
+        commands = unquote(router).__registered_commands__()
+
+        commands =
+          case {only, except} do
+            {[], []} -> commands
+            {_only, except} -> Enum.reject(commands, &Enum.member?(except, &1))
+            {only, _except} -> Enum.filter(commands, &Enum.member?(except, &1))
+          end
+
+        Enum.map(commands, fn module -> BoundedContext.command(module, unquote(opts)) end)
       end
     end
   end

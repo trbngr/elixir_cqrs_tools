@@ -42,7 +42,7 @@ defmodule Cqrs.DomainEvent do
       explicit_keys = Keyword.get(unquote(opts), :with, []) |> List.wrap()
       keys_to_drop = Keyword.get(unquote(opts), :drop, []) |> List.wrap()
 
-      @derive Jason.Encoder
+      if Code.ensure_loaded?(Jason), do: @derive(Jason.Encoder)
 
       defstruct (inherited_keys ++ explicit_keys)
                 |> Enum.reject(&Enum.member?(keys_to_drop, &1))
