@@ -1,6 +1,49 @@
 defmodule Cqrs.CommandValidation do
   @moduledoc """
   Defines validation functions for a validated command.
+
+  ## Example
+
+      defmodule CreateUser do
+        use Cqrs.Command
+        alias Cqrs.CommandValidation
+
+        field :email, :string
+        field :name, :string
+        field :id, :binary_id, internal: true
+
+        derive_event UserCreated
+
+        @impl true
+        def handle_validate(command, _opts) do
+          Ecto.Changeset.validate_format(command, :email, ~r/@/)
+        end
+
+        @impl true
+        def after_validate(%{email: email} = command) do
+          Map.put(command, :id, UUID.uuid5(:oid, email))
+        end
+
+        @impl true
+        def before_dispatch(command, _opts) do
+          command
+          |> CommandValidation.new()
+          |> CommandValidation.add(&ensure_uniqueness/1)
+          |> CommandValidation.run()
+        end
+
+        @impl true
+        def handle_dispatch(_command, _opts) do
+          {:ok, :dispatched}
+        end
+
+        defp ensure_uniqueness(%{id: id}) do
+          if Repo.exists?(from u in User, where: u.id == ^id),
+            do: {:error, "user already exists"},
+            else: :ok
+        end
+      end
+
   """
 
   @type command :: map()
