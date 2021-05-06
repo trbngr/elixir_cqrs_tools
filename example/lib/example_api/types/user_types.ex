@@ -1,4 +1,5 @@
 defmodule ExampleApi.Types.UserTypes do
+  @moduledoc false
   use Absinthe.Schema.Notation
   use Absinthe.Relay.Schema.Notation, :modern
   import ExampleApi.Resolvers.UserResolver

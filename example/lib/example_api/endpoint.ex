@@ -1,4 +1,5 @@
 defmodule ExampleApi.Endpoint do
+  @moduledoc false
   use Phoenix.Endpoint, otp_app: :example
 
   plug Plug.RequestId

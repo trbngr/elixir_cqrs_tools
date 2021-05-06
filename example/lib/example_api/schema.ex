@@ -1,4 +1,5 @@
 defmodule ExampleApi.Schema do
+  @moduledoc false
   use Absinthe.Schema
   use Absinthe.Relay.Schema, :modern
 

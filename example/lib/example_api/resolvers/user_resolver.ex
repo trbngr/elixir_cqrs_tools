@@ -1,4 +1,5 @@
 defmodule ExampleApi.Resolvers.UserResolver do
+  @moduledoc false
   alias Absinthe.Relay.Connection
 
   alias Example.Repo

@@ -1,13 +1,19 @@
 defmodule Example.MixProject do
   use Mix.Project
 
+  @version "0.1.0"
+
   def project do
     [
       app: :example,
-      version: "0.1.0",
+      version: @version,
       elixir: "~> 1.10",
       start_permanent: Mix.env() == :prod,
-      deps: deps()
+      deps: deps(),
+      docs: [
+        main: "example",
+        source_ref: "v#{@version}"
+      ],
     ]
   end
 
@@ -32,6 +38,7 @@ defmodule Example.MixProject do
       {:plug_cowboy, "~> 2.4"},
       {:absinthe, "~> 1.6"},
       {:absinthe_plug, "~> 1.5"},
+      {:ex_doc, "~> 0.24", only: :dev, runtime: false},
       {:absinthe_relay, "~> 1.5"}
     ]
   end

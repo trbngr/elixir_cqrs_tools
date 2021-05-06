@@ -1,4 +1,5 @@
 defmodule Example.ReadModel do
+  @moduledoc false
   use Supervisor
 
   alias Example.ReadModel.UserProjector

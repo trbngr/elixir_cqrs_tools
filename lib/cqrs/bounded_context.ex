@@ -12,7 +12,7 @@ defmodule Cqrs.BoundedContext do
   end
 
   @moduledoc """
-  Macros to create proxy functions to [commands](`#{Command}`) and [queries](`#{Query}`) in a module.
+  Macros to create proxy functions to [commands](`Cqrs.Command`) and [queries](`Cqrs.Query`) in a module.
 
   ## Examples
       defmodule Users do
@@ -70,9 +70,9 @@ defmodule Cqrs.BoundedContext do
       ...> %{id: user.id, email: user.email}
       %{id: "052c1984-74c9-522f-858f-f04f1d4cc786", email: "chris@example.com"}
 
-  ### Usage with `#{Commanded}`
+  ### Usage with `Commanded`
 
-    If you are a Commanded user, you have already registered your commands with your commanded routers.
+    If you are a `Commanded` user, you have already registered your commands with your commanded routers.
     Instead of repeating yourself, you can cut down on boilerplate with the `import_commands/1` macro.
 
     Since `Commanded` is an optional dependency, you need to explicitly import `Cqrs.BoundedContext` to
@@ -305,7 +305,7 @@ defmodule Cqrs.BoundedContext do
 
   if Code.ensure_loaded?(Commanded) do
     @doc """
-    Imports all of a [Command Router's](`#{Commanded.Commands.Router}`) registered commands.
+    Imports all of a [Command Router's](`Commanded.Commands.Router`) registered commands.
 
     ## Options
 

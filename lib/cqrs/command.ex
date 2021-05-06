@@ -61,7 +61,7 @@ defmodule Cqrs.Command do
 
   ## Event derivation
 
-  You can derive [events](`#{DomainEvent}`) directly from a command.
+  You can derive [events](`Cqrs.DomainEvent`) directly from a command.
 
   see `derive_event/2`
 
@@ -278,10 +278,11 @@ defmodule Cqrs.Command do
   Defines a command field.
 
   * `:name` - any `atom`
-  * `:type` - any valid `Ecto.Schema` type
-  * `:opts` - any valid `Ecto.Schema` field options. Plus:
+  * `:type` - any valid [Ecto Schema](`Ecto.Schema`) type
+  * `:opts` - any valid [Ecto Schema](`Ecto.Schema`) field options. Plus:
 
-      * `:required` - `true` | `false`. Defaults to the `require_all_fields` option.
+      * `:required` - `true | false`. Defaults to the `require_all_fields` option.
+      * `:internal` - `true | false`. If `true`, this field is meant to be used internally and will be hidden from documentation.
       * `:description` - Documentation for the field.
   """
 
@@ -296,9 +297,9 @@ defmodule Cqrs.Command do
   end
 
   @doc """
-  Generates a `#{DomainEvent}` based on the fields defined in the `#{Command}`.
+  Generates an [event](`Cqrs.DomainEvent`) based on the fields defined in the [command](`Cqrs.Command`).
 
-  Accepts all the options that `#{DomainEvent}` accepts.
+  Accepts all the options that [DomainEvent](`Cqrs.DomainEvent`) accepts.
   """
   defmacro derive_event(name, opts \\ []) do
     quote location: :keep do

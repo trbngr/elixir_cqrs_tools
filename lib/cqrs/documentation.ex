@@ -9,13 +9,8 @@ defmodule Cqrs.Documentation do
           Enum.member?(required_fields, name)
         end)
 
-      required_field_docs =
-        if length(required_fields) > 0,
-          do: Documentation.__fields_docs__(required_fields, "Required")
-
-      optional_field_docs =
-        if length(optional_fields) > 0,
-          do: Documentation.__fields_docs__(optional_fields, "Optional")
+      required_field_docs = Documentation.__fields_docs__(required_fields, "Required")
+      optional_field_docs = Documentation.__fields_docs__(optional_fields, "Optional")
 
       """
       ## #{title}
@@ -29,7 +24,9 @@ defmodule Cqrs.Documentation do
   defmacro __fields_docs__(fields, title) do
     quote do
       field_docs =
-        Enum.map(unquote(fields), fn {name, type, opts} ->
+        unquote(fields)
+        |> Enum.reject(fn {_name, _type, opts} -> Keyword.get(opts, :internal, false) end)
+        |> Enum.map(fn {name, type, opts} ->
           description =
             case Keyword.get(opts, :description) do
               nil -> nil
@@ -50,10 +47,12 @@ defmodule Cqrs.Documentation do
           """
         end)
 
-      """
-      ### #{unquote(title)} #{field_docs}
+      if length(field_docs) > 0 do
+        """
+        ### #{unquote(title)} #{field_docs}
 
-      """
+        """
+      end
     end
   end
 end

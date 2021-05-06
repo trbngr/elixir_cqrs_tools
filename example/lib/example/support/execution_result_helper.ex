@@ -1,4 +1,5 @@
 defmodule ExecutionResultHelper do
+  @moduledoc false
   @type execution_result ::
           {:ok, result :: Commanded.Commands.ExecutionResult.t()}
           | {:error, reason :: term}

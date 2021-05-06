@@ -1,4 +1,5 @@
 defmodule ExampleApi.Middleware.HandleExceptions do
+  @moduledoc false
   require Logger
 
   @behaviour Absinthe.Middleware

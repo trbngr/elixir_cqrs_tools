@@ -1,4 +1,5 @@
 defmodule ExampleApi.Router do
+  @moduledoc false
   use Phoenix.Router
   import Phoenix.Controller
 

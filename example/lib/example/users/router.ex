@@ -1,4 +1,5 @@
 defmodule Example.Users.Router do
+  @moduledoc false
   use Commanded.Commands.Router
 
   alias Example.Users.UserAggregate

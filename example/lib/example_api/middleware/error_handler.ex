@@ -1,4 +1,5 @@
 defmodule ExampleApi.Middleware.ErrorHandler do
+  @moduledoc false
   @behaviour Absinthe.Middleware
 
   alias ExampleApi.Error

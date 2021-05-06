@@ -1,4 +1,5 @@
 defmodule ExampleApi.Error do
+  @moduledoc false
   require Logger
 
   defstruct [:code, :message, :status_code]
