@@ -182,13 +182,13 @@ defmodule Cqrs.Query do
   end
 
   @doc """
-  Defines a `#{Query}` filter.
+  Defines a [Query](`Cqrs.Query`) filter.
 
   * `:name` - any `atom`
-  * `:type` - any valid `Ecto.Schema` type
-  * `:opts` - any valid `Ecto.Schema` field options. Plus:
+  * `:type` - any valid [Ecto Schema](`Ecto.Schema`) type
+  * `:opts` - any valid [Ecto Schema](`Ecto.Schema`) field options. Plus:
 
-      * `:required` - `true` | `false`. Defaults to the `require_all_fields` option.
+      * `:required` - `true | false`. Defaults to the `require_all_filters` option.
       * `:description` - Documentation for the field.
   """
   defmacro filter(name, type, opts \\ []) do
