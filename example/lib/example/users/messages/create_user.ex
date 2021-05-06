@@ -7,7 +7,7 @@ defmodule Example.Users.Messages.CreateUser do
   field :name, :string
   field :email, :string
 
-  field :id, :binary_id, required: false, internal: true
+  field :id, :binary_id, internal: true
 
   derive_event UserCreated, with: [status: :active]
 

@@ -18,7 +18,7 @@ defmodule Cqrs.Command do
 
         field :email, :string
         field :name, :string
-        field :id, :binary_id, required: false
+        field :id, :binary_id, internal: true
 
         @impl true
         def handle_validate(command, _opts) do
@@ -282,15 +282,17 @@ defmodule Cqrs.Command do
   * `:opts` - any valid [Ecto Schema](`Ecto.Schema`) field options. Plus:
 
       * `:required` - `true | false`. Defaults to the `require_all_fields` option.
-      * `:internal` - `true | false`. If `true`, this field is meant to be used internally and will be hidden from documentation.
+      * `:internal` - `true | false`. If `true`, this field is meant to be used internally. If `true`, the required option will be set to `false` and the field will be hidden from documentation.
       * `:description` - Documentation for the field.
   """
 
   @spec field(name :: atom(), type :: atom(), keyword()) :: any()
   defmacro field(name, type, opts \\ []) do
     quote location: :keep do
-      required = Keyword.get(unquote(opts), :required, @require_all_fields)
-      if required, do: @required_fields(unquote(name))
+      unless Keyword.get(unquote(opts), :internal, false) do
+        required = Keyword.get(unquote(opts), :required, @require_all_fields)
+        if required, do: @required_fields(unquote(name))
+      end
 
       @schema_fields {unquote(name), unquote(Macro.escape(type)), unquote(opts)}
     end

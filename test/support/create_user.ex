@@ -3,7 +3,7 @@ defmodule CreateUser do
 
   field :email, :string
   field :name, :string
-  field :id, :binary_id, required: false
+  field :id, :binary_id, internal: true
 
   derive_event UserCreated
 
