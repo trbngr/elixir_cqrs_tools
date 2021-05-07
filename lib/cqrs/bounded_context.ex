@@ -337,8 +337,9 @@ defmodule Cqrs.BoundedContext do
         commands =
           case {only, except} do
             {[], []} -> commands
-            {_only, except} -> Enum.reject(commands, &Enum.member?(except, &1))
-            {only, _except} -> Enum.filter(commands, &Enum.member?(only, &1))
+            {[], except} -> Enum.reject(commands, &Enum.member?(except, &1))
+            {only, []} -> Enum.filter(commands, &Enum.member?(only, &1))
+            _ -> raise "You can only specify :only or :except"
           end
 
         Enum.map(commands, fn module -> BoundedContext.command(module, unquote(opts)) end)
