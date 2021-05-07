@@ -11,7 +11,9 @@ locals_without_parens = [
   derive_event: 1,
   derive_event: 2,
   import_commands: 1,
-  import_commands: 2
+  import_commands: 2,
+  query_args: 1,
+  query_args: 2
 ]
 
 [

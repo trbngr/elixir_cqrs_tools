@@ -125,6 +125,7 @@ defmodule Cqrs.Query do
 
       @filter_docs Documentation.field_docs("Filters", @filters, @required_filters)
 
+      def __filters__, do: @filters
       def __filter_docs__, do: @filter_docs
       def __module_docs__, do: @moduledoc
       def __query__, do: String.trim_leading(to_string(__MODULE__), "Elixir.")
@@ -196,7 +197,7 @@ defmodule Cqrs.Query do
       required = Keyword.get(unquote(opts), :required, @require_all_filters)
       if required, do: @required_filters(unquote(name))
 
-      @filters {unquote(name), unquote(type), unquote(opts)}
+      @filters {unquote(name), unquote(type), Keyword.put(unquote(opts), :required, required)}
     end
   end
 

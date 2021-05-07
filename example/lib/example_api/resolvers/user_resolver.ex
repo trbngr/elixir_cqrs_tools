@@ -7,6 +7,10 @@ defmodule ExampleApi.Resolvers.UserResolver do
 
   import ExecutionResultHelper
 
+  def user(args, _res) do
+     {:ok, Users.get_user!(args)}
+  end
+
   def users(args, _res) do
     args
     |> Users.list_users_query!()

@@ -1,7 +1,11 @@
 defmodule ExampleApi.Types.UserTypes do
   @moduledoc false
+  use Cqrs.Absinthe
   use Absinthe.Schema.Notation
   use Absinthe.Relay.Schema.Notation, :modern
+
+  alias Example.Queries.{ListUsers, GetUser}
+
   import ExampleApi.Resolvers.UserResolver
 
   enum :user_status do
@@ -19,10 +23,13 @@ defmodule ExampleApi.Types.UserTypes do
   connection(node_type: :user)
 
   object :user_queries do
+    field :user, :user do
+      query_args GetUser, except: [:name]
+      resolve &user/2
+    end
+
     connection field :users, node_type: :user do
-      arg :status, :user_status
-      arg :email, :string
-      arg :name, :string
+      query_args ListUsers, status: :user_status
       resolve &users/2
     end
   end
