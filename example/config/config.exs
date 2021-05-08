@@ -1,5 +1,7 @@
 import Config
 
+config :cqrs_tools, :absinthe_relay, repo: Example.Repo
+
 config :example, ExampleApi.Endpoint,
   pubsub_server: Example.PubSub,
   http: [port: 4000],

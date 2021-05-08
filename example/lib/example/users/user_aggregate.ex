@@ -1,5 +1,4 @@
 defmodule Example.Users.UserAggregate do
-
   defstruct [:id, :status]
 
   alias Example.Users.Messages.{CreateUser, UserCreated}

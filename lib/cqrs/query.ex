@@ -33,10 +33,10 @@ defmodule Cqrs.Query do
   ### Creation
 
       iex> GetUser.new!()
-      ** (Cqrs.Query.QueryError) %{email: ["can't be blank"]}
+      ** (Cqrs.QueryError) %{email: ["can't be blank"]}
 
       iex> GetUser.new!(email: "wrong")
-      ** (Cqrs.Query.QueryError) %{email: ["has invalid format"]}
+      ** (Cqrs.QueryError) %{email: ["has invalid format"]}
 
       iex> {:error, %{errors: errors}} = GetUser.new()
       ...> errors
@@ -59,22 +59,6 @@ defmodule Cqrs.Query do
       %{id: "052c1984-74c9-522f-858f-f04f1d4cc786", email: "chris@example.com"}
   """
 
-  defmodule QueryError do
-    defexception [:query]
-
-    def message(%{query: query}) do
-      query
-      |> Ecto.Changeset.traverse_errors(&translate_error/1)
-      |> inspect()
-    end
-
-    defp translate_error({msg, opts}) do
-      Enum.reduce(opts, msg, fn {key, value}, acc ->
-        String.replace(acc, "%{#{key}}", to_string(value))
-      end)
-    end
-  end
-
   @type opts :: keyword()
   @type query :: Ecto.Query.t()
   @type filters :: keyword()
@@ -84,7 +68,7 @@ defmodule Cqrs.Query do
   @callback handle_execute(Ecto.Query.t(), opts()) ::
               {:ok, any()} | {:error, query()} | {:error, any()}
 
-  alias Cqrs.{Documentation, Query}
+  alias Cqrs.{Documentation, Query, QueryError}
 
   defmacro __using__(opts \\ []) do
     require_all_filters = Keyword.get(opts, :require_all_filters, false)
@@ -230,7 +214,7 @@ defmodule Cqrs.Query do
   def __new__!(mod, filters, required_filters, opts \\ []) when is_list(opts) do
     case __new__(mod, filters, required_filters, opts) do
       {:ok, query} -> query
-      {:error, query} -> raise Cqrs.Query.QueryError, query: query
+      {:error, query} -> raise QueryError, query: query
     end
   end
 

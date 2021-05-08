@@ -12,7 +12,7 @@ defmodule ExampleApi.Middleware.ErrorHandler do
       |> List.flatten()
       |> Enum.map(&to_absinthe_format/1)
 
-    %{ resolution | errors: errors }
+    %{resolution | errors: errors}
   end
 
   defp to_absinthe_format(%Error{} = error), do: Map.from_struct(error)
