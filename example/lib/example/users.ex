@@ -1,6 +1,6 @@
 defmodule Example.Users do
   use Cqrs.BoundedContext
-  import Cqrs.BoundedContext
+  use Cqrs.BoundedContext.Commanded
 
   import_commands Example.Users.Router
 

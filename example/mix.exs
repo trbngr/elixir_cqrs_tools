@@ -13,7 +13,7 @@ defmodule Example.MixProject do
       docs: [
         main: "example",
         source_ref: "v#{@version}"
-      ],
+      ]
     ]
   end
 
@@ -38,8 +38,8 @@ defmodule Example.MixProject do
       {:plug_cowboy, "~> 2.4"},
       {:absinthe, "~> 1.6"},
       {:absinthe_plug, "~> 1.5"},
-      {:ex_doc, "~> 0.24", only: :dev, runtime: false},
-      {:absinthe_relay, "~> 1.5"}
+      {:absinthe_relay, "~> 1.5"},
+      {:ex_doc, "~> 0.24", only: :dev, runtime: false}
     ]
   end
 end

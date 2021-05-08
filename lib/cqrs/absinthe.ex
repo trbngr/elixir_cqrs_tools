@@ -1,83 +1,147 @@
 if Code.ensure_loaded?(Absinthe) do
   defmodule Cqrs.Absinthe do
+    @moduledoc """
+    Macros to derive queries and mutations from [Queries](`Cqrs.Query`) and [Commands](`Cqrs.Command`), respectfully.
+
+    ## Example
+
+        defmodule ExampleApi.Types.UserTypes do
+          @moduledoc false
+          use Cqrs.Absinthe
+
+          use Absinthe.Schema.Notation
+
+          alias Example.Queries.{ListUsers, GetUser}
+          alias Example.Users.Messages.{CreateUser, SuspendUser, ReinstateUser}
+
+          import ExampleApi.Resolvers.UserResolver
+
+          enum :user_status do
+            value :active
+            value :suspended
+          end
+
+          object :user do
+            field :id, :id
+            field :name, :string
+            field :email, :string
+            field :status, :user_status
+          end
+
+          object :user_queries do
+            derive_query GetUser, :user,
+              as: :user,
+              except: [:name]
+
+            derive_query ListUsers, :user,
+              as: :users,
+              arg_types: [status: :user_status]
+          end
+
+          derive_mutation_input CreateUser
+
+          object :user_mutations do
+            derive_mutation CreateUser, :user, input_object?: true, then: &fetch_user/1
+            derive_mutation SuspendUser, :user, then: &fetch_user/1
+            derive_mutation ReinstateUser, :user, then: &fetch_user/1
+          end
+        end
+
+    """
+    alias Cqrs.Guards
+    alias Cqrs.Absinthe.{Mutation, Query}
+
     defmacro __using__(_) do
       quote do
-        import Cqrs.Absinthe, only: [query_args: 1, query_args: 2]
+        import Cqrs.Absinthe,
+          only: [
+            derive_mutation_input: 1,
+            derive_mutation_input: 2,
+            derive_mutation: 2,
+            derive_mutation: 3,
+            derive_query: 2,
+            derive_query: 3
+          ]
       end
     end
 
     @doc """
-    Creates args for an `Absinthe` query from a [query's](`Cqrs.Query`) filters.
+    Defines an `Absinthe` `query` from a [Query](`Cqrs.Query`).
 
     ## Options
 
-    * `:only` - Restrict importing to only the filters listed
-    * `:except` - Imports all filters except for those listed
-    * any filter name to an existing absinthe_type
+    * `:as` - The name to use for the query. Defaults to the query_module name snake_cased.
+    * `:only` - Use only the filters listed
+    * `:except` - Create filters for all except those listed
+    """
+    defmacro derive_query(query_module, return_type, opts \\ []) do
 
-    ## Examples
-        field :user, :user do
-          query_args GetUser, except: [:name]
-          resolve &user/2
+      opts = Keyword.merge(opts, source: query_module, macro: :derive_query)
+
+      field =
+        quote location: :keep do
+          Guards.ensure_is_query!(unquote(query_module))
+          Query.create_query(
+            unquote(query_module),
+            unquote(return_type),
+            unquote(opts)
+          )
         end
 
-        connection field :users, node_type: :user do
-          query_args ListUsers, status: :user_status
-          resolve &users/2
+      Module.eval_quoted(__CALLER__, field)
+    end
+
+    @doc """
+    Defines an `Absinthe` `input_object` for a [Command](`Cqrs.Command`).
+
+    ## Options
+
+    * `:as` - The name to use for the query. Defaults to the command_module name snake_cased with `_input` appended.
+    * `:only` - Create fields for only the fields from the command that are listed
+    * `:except` - Create fields for all command fields except those listed
+    """
+    defmacro derive_mutation_input(command_module, opts \\ []) do
+      opts = Keyword.merge(opts, source: command_module, macro: :derive_mutation_input)
+
+      input =
+        quote location: :keep do
+          Guards.ensure_is_command!(unquote(command_module))
+          Mutation.create_input_object(unquote(command_module), unquote(opts))
         end
+
+      Module.eval_quoted(__CALLER__, input)
+    end
+
+    @doc """
+    Defines an `Absinthe` `mutation` for a [Command](`Cqrs.Command`).
+
+    ## Options
+
+    * `:as` - The name to use for the mutation. Defaults to the query_module name snake_cased.
+    * `:only` - Create fields for only the fields from the command that are listed
+    * `:except` - Create fields for all command fields except those listed
+    * `:then` - A `function/1` that accepts the result of the command execution. The function should return the standard `Absinthe` `{:ok, response}` or `{:error, error}` tuple.
+    * `:input_object?` - `true | false`. Defaults to `false`
+
+      * If `true`, one arg with the name of `:input` will be generated.
+
+      * If `true`, an `input_object` for the [Command](`Cqrs.Command`) is expected to exist. See `derive_mutation_input/2`.
 
     """
-    defmacro query_args(query_module, opts \\ []) do
-      query_args = __create_query_args__(query_module, opts)
-      Module.eval_quoted(__CALLER__, query_args)
-    end
+    defmacro derive_mutation(command_module, return_type, opts \\ []) do
+      opts = Keyword.merge(opts, source: command_module, macro: :derive_mutation)
 
-    def __create_query_args__(query_module, opts) do
-      quote do
-        _ = unquote(query_module).__info__(:functions)
-
-        unless function_exported?(unquote(query_module), :__query__, 0) do
-          raise Cqrs.BoundedContext.InvalidQueryError, query: unquote(query_module)
+      mutation =
+        quote location: :keep do
+          Guards.ensure_is_command!(unquote(command_module))
+          Mutation.create_mutatation(
+            unquote(command_module),
+            unquote(return_type),
+            unquote(opts)
+          )
         end
 
-        filters = Cqrs.Absinthe.__extract_filters__(unquote(query_module), unquote(opts))
-        |> Enum.map(fn {name, absinthe_type, required} ->
-          case required do
-            true -> quote do: arg(unquote(name), non_null(unquote(absinthe_type)))
-            false -> quote do: arg(unquote(name), unquote(absinthe_type))
-          end
-        end)
-      end
+      Module.eval_quoted(__CALLER__, mutation)
     end
-
-    def __extract_filters__(query_module, opts) do
-      filters = query_module.__filters__()
-
-      only = Keyword.get(opts, :only, [])
-      except = Keyword.get(opts, :except, [])
-
-      filters =
-        case {only, except} do
-          {[], []} -> filters
-          {[], except} -> Enum.reject(filters, &Enum.member?(except, elem(&1, 0)))
-          {only, []} -> Enum.filter(filters, &Enum.member?(only, elem(&1, 0)))
-          _ -> raise "You can only specify :only or :except"
-        end
-
-      Enum.map(filters, fn filter ->
-        {name, _type, filter_opts} = filter
-        absinthe_type = Cqrs.Absinthe.__absinthe_type__(filter, opts)
-        required = Keyword.get(filter_opts, :required, false)
-        {name, absinthe_type, required}
-      end)
-    end
-
-    def __absinthe_type__({name, Ecto.Enum, _}, opts) do
-      enum_type = Keyword.get(opts, name) || raise "Must supply absinthe enum type for #{name}"
-      quote do: unquote(enum_type)
-    end
-
-    def __absinthe_type__({_name, :binary_id, _}, _opts), do: quote(do: :id)
-    def __absinthe_type__({_name, type, _}, _opts), do: quote(do: unquote(type))
   end
 end

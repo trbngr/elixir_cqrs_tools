@@ -33,7 +33,7 @@ defmodule Cqrs.DomainEvent do
       ...> %{id: event.id, from: event.from, version: event.version}
       %{id: 668, from: "chris", version: 2}
   """
-  alias Cqrs.DomainEvent
+  alias Cqrs.{DomainEvent, Guards}
 
   defmacro __using__(opts) do
     quote do
@@ -62,12 +62,7 @@ defmodule Cqrs.DomainEvent do
         []
 
       source when is_atom(source) ->
-        source.__info__(:functions)
-
-        unless function_exported?(source, :__struct__, 0) do
-          raise "#{source} should be a valid struct to use with DomainEvent"
-        end
-
+        Guards.ensure_is_struct!(source)
         Map.keys(source.__struct__())
 
       source ->

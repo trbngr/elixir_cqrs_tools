@@ -8,12 +8,13 @@ locals_without_parens = [
   command: 2,
   query: 1,
   query: 2,
-  derive_event: 1,
-  derive_event: 2,
-  import_commands: 1,
-  import_commands: 2,
-  query_args: 1,
-  query_args: 2
+  derive_query: 2,
+  derive_query: 3,
+  derive_connection: 3,
+  derive_mutation_input: 1,
+  derive_mutation_input: 2,
+  derive_mutation: 2,
+  derive_mutation: 3
 ]
 
 [
