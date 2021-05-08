@@ -5,14 +5,14 @@
     If you are a `Commanded` user, you have already registered your commands with your commanded routers.
     Instead of repeating yourself, you can cut down on boilerplate with the `import_commands/1` macro.
 
-      defmodule UsersEnhanced do
-        use Cqrs.BoundedContext
-        use Cqrs.BoundedContext.Commanded
+        defmodule UsersEnhanced do
+          use Cqrs.BoundedContext
+          use Cqrs.BoundedContext.Commanded
 
-        import_commands CommandedRouter
+          import_commands CommandedRouter
 
-        query GetUser
-      end
+          query GetUser
+        end
     """
 
     alias Cqrs.{BoundedContext, Guards}
