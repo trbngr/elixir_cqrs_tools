@@ -2,11 +2,7 @@ defmodule Cqrs do
   alias Cqrs.{BoundedContext, Command, DomainEvent, Query, Absinthe, Absinthe.Relay}
 
   @moduledoc """
-  `CqrsTools` is a set of macros to make CQRS applications easy to manager.
-
-  ## [Bounded Contexts](`#{BoundedContext}`)
-
-  Creates proxy functions for [commands](`#{Command}`) and [events](`#{DomainEvent}`).
+  `CqrsTools` is a set of macros to let you focus on your core business and make CQRS applications easier to manage.
 
   ## [Commands](`#{Command}`)
 
@@ -20,11 +16,19 @@ defmodule Cqrs do
 
   Define queries with filters, validation, execution, and more.
 
-  ## [Absinthe](`#{Absinthe}`) convenience macros
+  ## [Bounded Contexts](`#{BoundedContext}`)
+
+  Creates proxy functions for [commands](`#{Command}`) and [events](`#{DomainEvent}`).
+
+  ## [Bounded Contexts for Commanded](`#{BoundedContext.Commanded}`)
+
+  Creates proxy functions for all [commands](`#{Command}`) registered in a [Commanded Router](`Commanded.Commands.Router`)
+
+  ## [Absinthe Macros](`#{Absinthe}`)
 
   Macros to derive queries and mutations from [Queries](`#{Query}`) and [Commands](`#{Command}`), respectfully.
 
-  ## [Absinthe Relay](`#{Relay}`) convenience macros
+  ## [Absinthe Relay Macros](`#{Relay}`)
 
   Macros for `Absinthe.Relay`
   """
