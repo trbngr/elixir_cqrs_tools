@@ -75,12 +75,12 @@ if Code.ensure_loaded?(Absinthe) do
     * `:except` - Create filters for all except those listed
     """
     defmacro derive_query(query_module, return_type, opts \\ []) do
-
       opts = Keyword.merge(opts, source: query_module, macro: :derive_query)
 
       field =
         quote location: :keep do
           Guards.ensure_is_query!(unquote(query_module))
+
           Query.create_query(
             unquote(query_module),
             unquote(return_type),
@@ -99,7 +99,10 @@ if Code.ensure_loaded?(Absinthe) do
     * `:as` - The name to use for the query. Defaults to the command_module name snake_cased with `_input` appended.
     """
     defmacro derive_mutation_input(command_module, opts \\ []) do
-      opts = Keyword.merge(opts, source: command_module, macro: :derive_mutation_input)
+      opts =
+        opts
+        |> Keyword.merge(source: command_module, macro: :derive_mutation_input)
+        |> Keyword.drop([:only, :except])
 
       input =
         quote location: :keep do
@@ -125,11 +128,15 @@ if Code.ensure_loaded?(Absinthe) do
 
     """
     defmacro derive_mutation(command_module, return_type, opts \\ []) do
-      opts = Keyword.merge(opts, source: command_module, macro: :derive_mutation)
+      opts =
+        opts
+        |> Keyword.merge(source: command_module, macro: :derive_mutation)
+        |> Keyword.drop([:only, :except])
 
       mutation =
         quote location: :keep do
           Guards.ensure_is_command!(unquote(command_module))
+
           Mutation.create_mutatation(
             unquote(command_module),
             unquote(return_type),
