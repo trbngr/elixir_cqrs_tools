@@ -5,7 +5,7 @@ if Code.ensure_loaded?(Absinthe) do
     defmacro derive_mutation_input(command_module, opts \\ []) do
       input =
         quote do
-          Mutation.__create_mutation_input(
+          Mutation.__create_input_object__(
             unquote(command_module),
             unquote(opts)
           )
@@ -14,15 +14,28 @@ if Code.ensure_loaded?(Absinthe) do
       Module.eval_quoted(__CALLER__, input)
     end
 
-    def __create_mutation_input(command_module, opts) do
+    def __create_input_object__(command_module, opts) do
       function_name = BoundedContext.__function_name__(command_module, opts)
-      input_object_fields = __create_mutation_input_object_fields__(command_module, opts)
+      input_object_fields = __create_input_object_fields__(command_module, opts)
 
       quote do
         input_object unquote(:"#{function_name}_input") do
           (unquote_splicing(input_object_fields))
         end
       end
+    end
+
+    def __create_input_object_fields__(command_module, opts) do
+      opts = Keyword.merge(opts, source: command_module, macro: :derive_mutation_input)
+
+      command_module.__fields__()
+      |> Cqrs.Absinthe.__extract_fields__(opts)
+      |> Enum.map(fn {name, absinthe_type, required} ->
+        case required do
+          true -> quote do: field(unquote(name), non_null(unquote(absinthe_type)))
+          false -> quote do: field(unquote(name), unquote(absinthe_type))
+        end
+      end)
     end
 
     defmacro derive_mutation(command_module, returns, opts \\ []) do
@@ -40,7 +53,6 @@ if Code.ensure_loaded?(Absinthe) do
 
     def __create_mutatation__(command_module, returns, opts) do
       function_name = BoundedContext.__function_name__(command_module, opts)
-
       args = __create_mutatation_args__(command_module, function_name, opts)
 
       quote do
@@ -79,19 +91,6 @@ if Code.ensure_loaded?(Absinthe) do
         case required do
           true -> quote do: arg(unquote(name), non_null(unquote(absinthe_type)))
           false -> quote do: arg(unquote(name), unquote(absinthe_type))
-        end
-      end)
-    end
-
-    def __create_mutation_input_object_fields__(command_module, opts) do
-      opts = Keyword.merge(opts, source: command_module, macro: :derive_mutation_input)
-
-      command_module.__fields__()
-      |> Cqrs.Absinthe.__extract_fields__(opts)
-      |> Enum.map(fn {name, absinthe_type, required} ->
-        case required do
-          true -> quote do: field(unquote(name), non_null(unquote(absinthe_type)))
-          false -> quote do: field(unquote(name), unquote(absinthe_type))
         end
       end)
     end
