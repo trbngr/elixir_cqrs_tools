@@ -97,8 +97,6 @@ if Code.ensure_loaded?(Absinthe) do
     ## Options
 
     * `:as` - The name to use for the query. Defaults to the command_module name snake_cased with `_input` appended.
-    * `:only` - Create fields for only the fields from the command that are listed
-    * `:except` - Create fields for all command fields except those listed
     """
     defmacro derive_mutation_input(command_module, opts \\ []) do
       opts = Keyword.merge(opts, source: command_module, macro: :derive_mutation_input)
@@ -118,8 +116,6 @@ if Code.ensure_loaded?(Absinthe) do
     ## Options
 
     * `:as` - The name to use for the mutation. Defaults to the query_module name snake_cased.
-    * `:only` - Create fields for only the fields from the command that are listed
-    * `:except` - Create fields for all command fields except those listed
     * `:then` - A `function/1` that accepts the result of the command execution. The function should return the standard `Absinthe` `{:ok, response}` or `{:error, error}` tuple.
     * `:input_object?` - `true | false`. Defaults to `false`
 
