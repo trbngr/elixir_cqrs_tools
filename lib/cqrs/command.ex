@@ -1,6 +1,6 @@
 defmodule Cqrs.Command do
-  alias Cqrs.Command.{CommandState, CommandError}
-  alias Cqrs.{Command, Documentation, DomainEvent}
+  alias Cqrs.Command.CommandState
+  alias Cqrs.{Command, CommandError, Documentation, DomainEvent, Guards}
 
   @moduledoc """
   The `Command` macro allows you to define a command that encapsulates a struct definition,
@@ -142,16 +142,18 @@ defmodule Cqrs.Command do
     require_all_fields = Keyword.get(opts, :require_all_fields, true)
 
     quote location: :keep do
+      Module.put_attribute(__MODULE__, :require_all_fields, unquote(require_all_fields))
+      Module.put_attribute(__MODULE__, :dispatcher, Keyword.get(unquote(opts), :dispatcher))
+
       Module.register_attribute(__MODULE__, :events, accumulate: true)
       Module.register_attribute(__MODULE__, :schema_fields, accumulate: true)
       Module.register_attribute(__MODULE__, :required_fields, accumulate: true)
-      Module.put_attribute(__MODULE__, :require_all_fields, unquote(require_all_fields))
-      Module.put_attribute(__MODULE__, :dispatcher, Keyword.get(unquote(opts), :dispatcher))
 
       import Command, only: [field: 2, field: 3, derive_event: 1, derive_event: 2]
 
       @behaviour Command
       @before_compile Command
+      @after_compile Command
 
       def handle_validate(command, _opts), do: command
       def after_validate(command), do: command
@@ -170,10 +172,15 @@ defmodule Cqrs.Command do
       Command.__events__()
 
       Module.delete_attribute(__MODULE__, :events)
-      Module.delete_attribute(__MODULE__, :dispatcher)
       Module.delete_attribute(__MODULE__, :schema_fields)
       Module.delete_attribute(__MODULE__, :required_fields)
       Module.delete_attribute(__MODULE__, :require_all_fields)
+    end
+  end
+
+  defmacro __after_compile__(_env, _bytecode) do
+    quote location: :keep do
+      if @dispatcher, do: Guards.ensure_is_dispatcher!(@dispatcher)
     end
   end
 
@@ -240,14 +247,6 @@ defmodule Cqrs.Command do
       end
 
       if @dispatcher do
-        # This appears to ensure the dispatcher module has been completly compiled
-        # before checking for the dispatch function
-        _ = @dispatcher.__info__(:functions)
-
-        unless function_exported?(@dispatcher, :dispatch, 2) do
-          raise "#{@dispatcher} is required to export a dispatch/2 function."
-        end
-
         def handle_dispatch(%__MODULE__{} = cmd, opts) do
           @dispatcher.dispatch(cmd, opts)
         end

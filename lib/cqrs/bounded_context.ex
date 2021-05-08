@@ -1,15 +1,5 @@
 defmodule Cqrs.BoundedContext do
-  alias Cqrs.BoundedContext
-
-  defmodule InvalidCommandError do
-    defexception [:command]
-    def message(%{command: command}), do: "#{command} is not a Cqrs.Command"
-  end
-
-  defmodule InvalidQueryError do
-    defexception [:query]
-    def message(%{query: query}), do: "#{query} is not a Cqrs.Query"
-  end
+  alias Cqrs.{BoundedContext, Guards}
 
   @moduledoc """
   Macros to create proxy functions to [commands](`Cqrs.Command`) and [queries](`Cqrs.Query`) in a module.
@@ -46,13 +36,13 @@ defmodule Cqrs.BoundedContext do
   ### Queries
 
       iex> Users.get_user!()
-      ** (Cqrs.Query.QueryError) %{email: ["can't be blank"]}
+      ** (Cqrs.QueryError) %{email: ["can't be blank"]}
 
       iex> Users.get_user2!()
-      ** (Cqrs.Query.QueryError) %{email: ["can't be blank"]}
+      ** (Cqrs.QueryError) %{email: ["can't be blank"]}
 
       iex> Users.get_user!(email: "wrong")
-      ** (Cqrs.Query.QueryError) %{email: ["has invalid format"]}
+      ** (Cqrs.QueryError) %{email: ["has invalid format"]}
 
       iex> {:error, %{errors: errors}} = Users.get_user()
       ...> errors
@@ -69,24 +59,6 @@ defmodule Cqrs.BoundedContext do
       iex> {:ok, user} = Users.get_user(email: "chris@example.com")
       ...> %{id: user.id, email: user.email}
       %{id: "052c1984-74c9-522f-858f-f04f1d4cc786", email: "chris@example.com"}
-
-  ### Usage with `Commanded`
-
-    If you are a `Commanded` user, you have already registered your commands with your commanded routers.
-    Instead of repeating yourself, you can cut down on boilerplate with the `import_commands/1` macro.
-
-    Since `Commanded` is an optional dependency, you need to explicitly import `Cqrs.BoundedContext` to
-    bring the macro into scope.
-
-      defmodule UsersEnhanced do
-        use Cqrs.BoundedContext
-        import Cqrs.BoundedContext
-
-        import_commands CommandedRouter
-
-        query GetUser
-        query GetUser, as: :get_user2
-      end
   """
 
   defmacro __using__(_) do
@@ -132,13 +104,9 @@ defmodule Cqrs.BoundedContext do
   * `:after` - A function of one arity to run with the execution result.
   """
   defmacro command(command_module, opts \\ []) do
+
     quote location: :keep do
-      _ = unquote(command_module).__info__(:functions)
-
-      unless function_exported?(unquote(command_module), :__command__, 0) do
-        raise InvalidCommandError, command: unquote(command_module)
-      end
-
+      Guards.ensure_is_command!(unquote(command_module))
       function_name = BoundedContext.__function_name__(unquote(command_module), unquote(opts))
 
       then =
@@ -195,13 +163,9 @@ defmodule Cqrs.BoundedContext do
   * `list_users_query/2`
   """
   defmacro query(query_module, opts \\ []) do
+
     quote location: :keep do
-      _ = unquote(query_module).__info__(:functions)
-
-      unless function_exported?(unquote(query_module), :__query__, 0) do
-        raise InvalidQueryError, query: unquote(query_module)
-      end
-
+      Guards.ensure_is_query!(unquote(query_module))
       function_name = BoundedContext.__function_name__(unquote(query_module), unquote(opts))
       @queries {unquote(query_module), function_name}
     end
@@ -233,7 +197,7 @@ defmodule Cqrs.BoundedContext do
       #{unquote(query_module).__filter_docs__()}
       """
       def unquote(:"#{function_name}_query")(filters \\ [], opts \\ []) do
-        BoundedContext.__create_query__(unquote(query_module), filters, opts)
+        BoundedContext.create_query(unquote(query_module), filters, opts)
       end
 
       @doc """
@@ -241,7 +205,7 @@ defmodule Cqrs.BoundedContext do
       #{unquote(query_module).__filter_docs__()}
       """
       def unquote(:"#{function_name}_query!")(filters \\ [], opts \\ []) do
-        BoundedContext.__create_query__!(unquote(query_module), filters, opts)
+        BoundedContext.create_query!(unquote(query_module), filters, opts)
       end
     end
   end
@@ -283,11 +247,11 @@ defmodule Cqrs.BoundedContext do
 
   def __handle_command_result__(_result, _other), do: raise("'then' should be a function/1")
 
-  def __create_query__(module, attrs, opts) do
+  def create_query(module, attrs, opts) do
     module.new(attrs, opts)
   end
 
-  def __create_query__!(module, attrs, opts) do
+  def create_query!(module, attrs, opts) do
     module.new!(attrs, opts)
   end
 
@@ -303,47 +267,4 @@ defmodule Cqrs.BoundedContext do
     |> module.execute(opts)
   end
 
-  if Code.ensure_loaded?(Commanded) do
-    @doc """
-    Imports all of a [Command Router's](`Commanded.Commands.Router`) registered commands.
-
-    ## Options
-
-    * `:only` - Restrict importing to only the commands listed
-    * `:except` - Imports commands except those listed
-    * `:after` - a list of function names and a function of one arity to run with the execution result
-
-    ### Example
-        import_commands Example.Users.Router,
-          except: [CreateUser],
-          after: [
-            reinstate_user: &AfterExecution.load_user/1,
-            suspend_user: &AfterExecution.load_user/1
-          ]
-    """
-    defmacro import_commands(router, opts \\ []) do
-      quote do
-        _ = unquote(router).__info__(:functions)
-
-        unless function_exported?(unquote(router), :__registered_commands__, 0) do
-          raise "#{unquote(router)} is required to be a .#{Commanded.Commands.Router}"
-        end
-
-        only = Keyword.get(unquote(opts), :only, [])
-        except = Keyword.get(unquote(opts), :except, [])
-
-        commands = unquote(router).__registered_commands__()
-
-        commands =
-          case {only, except} do
-            {[], []} -> commands
-            {[], except} -> Enum.reject(commands, &Enum.member?(except, &1))
-            {only, []} -> Enum.filter(commands, &Enum.member?(only, &1))
-            _ -> raise "You can only specify :only or :except"
-          end
-
-        Enum.map(commands, fn module -> BoundedContext.command(module, unquote(opts)) end)
-      end
-    end
-  end
 end
