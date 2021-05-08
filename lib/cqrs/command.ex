@@ -203,6 +203,7 @@ defmodule Cqrs.Command do
 
       @field_docs Documentation.field_docs("Fields", @schema_fields, @required_fields)
 
+      def __fields__, do: @schema_fields
       def __field_docs__, do: @field_docs
       def __module_docs__, do: @moduledoc
       def __command__, do: String.trim_leading(to_string(__MODULE__), "Elixir.")
@@ -289,12 +290,19 @@ defmodule Cqrs.Command do
   @spec field(name :: atom(), type :: atom(), keyword()) :: any()
   defmacro field(name, type, opts \\ []) do
     quote location: :keep do
-      unless Keyword.get(unquote(opts), :internal, false) do
-        required = Keyword.get(unquote(opts), :required, @require_all_fields)
-        if required, do: @required_fields(unquote(name))
-      end
+      required =
+        case Keyword.get(unquote(opts), :internal, false) do
+          true ->
+            false
 
-      @schema_fields {unquote(name), unquote(Macro.escape(type)), unquote(opts)}
+          false ->
+            required = Keyword.get(unquote(opts), :required, @require_all_fields)
+            if required, do: @required_fields(unquote(name))
+            required
+        end
+
+      opts = Keyword.put(unquote(opts), :required, required)
+      @schema_fields {unquote(name), unquote(Macro.escape(type)), opts}
     end
   end
 

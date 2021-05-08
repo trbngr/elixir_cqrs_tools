@@ -13,7 +13,7 @@ defmodule Example.MixProject do
       docs: [
         main: "example",
         source_ref: "v#{@version}"
-      ],
+      ]
     ]
   end
 

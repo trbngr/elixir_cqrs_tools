@@ -1,5 +1,6 @@
 defmodule Example.Users.Messages.SuspendUser do
   use Cqrs.Command, dispatcher: Example.App
+
   @moduledoc """
   Suspends an active user.
 
