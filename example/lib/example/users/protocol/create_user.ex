@@ -1,4 +1,4 @@
-defmodule Example.Users.Messages.CreateUser do
+defmodule Example.Users.Protocol.CreateUser do
   @moduledoc """
   Creates a new user.
   """

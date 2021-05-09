@@ -1,4 +1,4 @@
-defmodule Example.Users.Messages.SuspendUser do
+defmodule Example.Users.Protocol.SuspendUser do
   use Cqrs.Command, dispatcher: Example.App
 
   @moduledoc """

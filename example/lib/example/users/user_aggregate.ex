@@ -1,9 +1,9 @@
 defmodule Example.Users.UserAggregate do
   defstruct [:id, :status]
 
-  alias Example.Users.Messages.{CreateUser, UserCreated}
-  alias Example.Users.Messages.{SuspendUser, UserSuspended}
-  alias Example.Users.Messages.{ReinstateUser, UserReinstated}
+  alias Example.Users.Protocol.{CreateUser, UserCreated}
+  alias Example.Users.Protocol.{SuspendUser, UserSuspended}
+  alias Example.Users.Protocol.{ReinstateUser, UserReinstated}
 
   def execute(%{id: nil}, %CreateUser{} = cmd), do: UserCreated.new(cmd)
   def execute(_state, %CreateUser{}), do: {:error, :user_already_created}

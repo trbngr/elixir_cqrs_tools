@@ -1,4 +1,4 @@
-defmodule Example.Users.Messages.ReinstateUser do
+defmodule Example.Users.Protocol.ReinstateUser do
   use Cqrs.Command, dispatcher: Example.App
 
   @moduledoc """

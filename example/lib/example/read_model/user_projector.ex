@@ -5,7 +5,7 @@ defmodule Example.ReadModel.UserProjector do
     consistency: :strong
 
   alias Example.{Repo, Users, ReadModel.User}
-  alias Example.Users.Messages.{UserCreated, UserSuspended, UserReinstated}
+  alias Example.Users.Protocol.{UserCreated, UserSuspended, UserReinstated}
 
   def handle(%UserCreated{} = event, _metadata) do
     event

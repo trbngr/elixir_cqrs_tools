@@ -6,7 +6,7 @@ defmodule ExampleApi.Types.UserTypes do
   use Absinthe.Relay.Schema.Notation, :modern
 
   alias Example.Queries.{ListUsers, GetUser}
-  alias Example.Users.Messages.{CreateUser, SuspendUser, ReinstateUser}
+  alias Example.Users.Protocol.{CreateUser, SuspendUser, ReinstateUser}
 
   import ExampleApi.Resolvers.UserResolver
 

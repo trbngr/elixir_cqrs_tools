@@ -12,7 +12,7 @@ if Code.ensure_loaded?(Absinthe) do
           use Absinthe.Schema.Notation
 
           alias Example.Queries.{ListUsers, GetUser}
-          alias Example.Users.Messages.{CreateUser, SuspendUser, ReinstateUser}
+          alias Example.Users.Protocol.{CreateUser, SuspendUser, ReinstateUser}
 
           import ExampleApi.Resolvers.UserResolver
 
