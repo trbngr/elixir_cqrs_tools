@@ -1,7 +1,7 @@
 defmodule CqrsTools.MixProject do
   use Mix.Project
 
-  @version "0.2.0"
+  @version "0.2.1"
 
   def project do
     [
@@ -41,8 +41,8 @@ defmodule CqrsTools.MixProject do
       {:jason, "~> 1.2", optional: true},
       {:absinthe, "~> 1.6", optional: true},
       {:absinthe_relay, "~> 1.5", optional: true},
+      {:commanded, "~> 1.2", optional: true},
       {:ex_doc, "~> 0.24", only: :dev, runtime: false},
-      {:commanded, "~> 1.2", only: [:dev, :test], runtime: false},
       {:elixir_uuid, "~> 1.6", override: true, hex: :uuid_utils, only: :test}
     ]
   end
