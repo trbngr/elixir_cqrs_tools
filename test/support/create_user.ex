@@ -5,7 +5,7 @@ defmodule CreateUser do
   field :name, :string
   field :id, :binary_id, internal: true
 
-  derive_event UserCreated
+  derive_event(UserCreated)
 
   @impl true
   def handle_validate(command, _opts) do

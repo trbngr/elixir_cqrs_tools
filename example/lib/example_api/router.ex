@@ -7,6 +7,7 @@ defmodule ExampleApi.Router do
     plug Plug.Logger, log: :debug
     plug :accepts, ["json"]
     plug :put_secure_browser_headers
+    plug ExampleApi.Plug.AbsintheContext
   end
 
   scope "/" do

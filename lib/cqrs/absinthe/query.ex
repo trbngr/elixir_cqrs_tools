@@ -1,7 +1,7 @@
 if Code.ensure_loaded?(Absinthe) do
   defmodule Cqrs.Absinthe.Query do
     @moduledoc false
-    alias Cqrs.{BoundedContext, Absinthe.Args}
+    alias Cqrs.{BoundedContext, Absinthe.Args, Absinthe.Metadata}
 
     def create_connection_query(query_module, returns, opts) do
       function_name = BoundedContext.__function_name__(query_module, opts)
@@ -18,8 +18,10 @@ if Code.ensure_loaded?(Absinthe) do
         connection field unquote(function_name), node_type: unquote(returns) do
           unquote_splicing(query_args)
 
-          resolve(fn args, _resolution ->
+          resolve(fn args, resolution ->
             alias Absinthe.Relay.Connection
+
+            opts = Metadata.merge(resolution, unquote(opts))
 
             case BoundedContext.create_query(unquote(query_module), args, unquote(opts)) do
               {:error, error} ->
@@ -46,8 +48,10 @@ if Code.ensure_loaded?(Absinthe) do
         field unquote(function_name), unquote(returns) do
           unquote_splicing(query_args)
 
-          resolve(fn attrs, _resolution ->
-            case BoundedContext.__execute_query__(unquote(query_module), attrs, unquote(opts)) do
+          resolve(fn attrs, resolution ->
+            opts = Metadata.merge(resolution, unquote(opts))
+
+            case BoundedContext.__execute_query__(unquote(query_module), attrs, opts) do
               {:ok, results} -> {:ok, results}
               {:error, error} -> {:error, error}
               results -> {:ok, results}

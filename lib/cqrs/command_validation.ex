@@ -60,7 +60,6 @@ defmodule Cqrs.CommandValidation do
   @spec new(command()) :: t()
   def new(command), do: %__MODULE__{command: command}
 
-
   @doc """
   Adds a `validation_function` to the list of validations to run.
   """

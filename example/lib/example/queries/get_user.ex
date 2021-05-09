@@ -26,5 +26,10 @@ defmodule Example.Queries.GetUser do
   end
 
   @impl true
-  def handle_execute(query, opts), do: Repo.one(query, opts)
+  def handle_execute(query, opts) do
+    case Keyword.get(opts, :exists?, false) do
+      true -> Repo.exists?(query, opts)
+      false -> Repo.one(query, opts)
+    end
+  end
 end

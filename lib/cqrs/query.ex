@@ -108,11 +108,13 @@ defmodule Cqrs.Query do
       require Documentation
 
       @filter_docs Documentation.field_docs("Filters", @filters, @required_filters)
+      @name __MODULE__ |> Module.split() |> Enum.reverse() |> hd() |> to_string()
 
       def __filters__, do: @filters
       def __filter_docs__, do: @filter_docs
       def __module_docs__, do: @moduledoc
-      def __query__, do: String.trim_leading(to_string(__MODULE__), "Elixir.")
+      def __query__, do: __MODULE__
+      def __name__, do: @name
     end
   end
 

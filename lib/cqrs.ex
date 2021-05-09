@@ -32,5 +32,4 @@ defmodule Cqrs do
 
   Macros for `Absinthe.Relay`
   """
-
 end

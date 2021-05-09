@@ -1,7 +1,7 @@
 defmodule CqrsTools.MixProject do
   use Mix.Project
 
-  @version "0.2.4"
+  @version "0.2.5"
 
   def project do
     [
@@ -20,7 +20,7 @@ defmodule CqrsTools.MixProject do
       package: [
         licenses: ["MIT"],
         links: %{"GitHub" => "https://github.com/trbngr/elixir_cqrs_tools"}
-      ],
+      ]
     ]
   end
 

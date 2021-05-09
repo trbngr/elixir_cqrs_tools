@@ -3,5 +3,5 @@ defmodule DeactivateUser do
 
   field :id, :binary_id
 
-  derive_event UserDeactivated
+  derive_event(UserDeactivated)
 end

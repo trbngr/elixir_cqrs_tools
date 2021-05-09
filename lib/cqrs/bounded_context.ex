@@ -104,7 +104,6 @@ defmodule Cqrs.BoundedContext do
   * `:after` - A function of one arity to run with the execution result.
   """
   defmacro command(command_module, opts \\ []) do
-
     quote location: :keep do
       Guards.ensure_is_command!(unquote(command_module))
       function_name = BoundedContext.__function_name__(unquote(command_module), unquote(opts))
@@ -163,7 +162,6 @@ defmodule Cqrs.BoundedContext do
   * `list_users_query/2`
   """
   defmacro query(query_module, opts \\ []) do
-
     quote location: :keep do
       Guards.ensure_is_query!(unquote(query_module))
       function_name = BoundedContext.__function_name__(unquote(query_module), unquote(opts))
@@ -189,11 +187,11 @@ defmodule Cqrs.BoundedContext do
         BoundedContext.__execute_query__!(unquote(query_module), filters, opts)
       end
 
-      query = unquote(query_module).__query__()
-      query_headline_modifier = if query =~ ~r/^[aeiou]/i, do: "an", else: "a"
+      query_name = unquote(query_module).__name__()
+      query_headline_modifier = if query_name =~ ~r/^[aeiou]/i, do: "an", else: "a"
 
       @doc """
-      Creates #{query_headline_modifier} [#{query}](`#{unquote(query_module)}`) query without executing it.
+      Creates #{query_headline_modifier} [#{query_name}](`#{unquote(query_module)}`) query without executing it.
       #{unquote(query_module).__filter_docs__()}
       """
       def unquote(:"#{function_name}_query")(filters \\ [], opts \\ []) do
@@ -201,7 +199,7 @@ defmodule Cqrs.BoundedContext do
       end
 
       @doc """
-      Creates #{query_headline_modifier} [#{query}](`#{unquote(query_module)}`) query without executing it.
+      Creates #{query_headline_modifier} [#{query_name}](`#{unquote(query_module)}`) query without executing it.
       #{unquote(query_module).__filter_docs__()}
       """
       def unquote(:"#{function_name}_query!")(filters \\ [], opts \\ []) do
@@ -266,5 +264,4 @@ defmodule Cqrs.BoundedContext do
     |> module.new!(opts)
     |> module.execute(opts)
   end
-
 end

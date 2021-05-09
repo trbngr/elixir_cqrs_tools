@@ -1,10 +1,9 @@
 if Code.ensure_loaded?(Absinthe) do
   defmodule Cqrs.Absinthe.Mutation do
     @moduledoc false
-    alias Cqrs.{BoundedContext, Absinthe.Args}
+    alias Cqrs.{BoundedContext, Absinthe.Args, Absinthe.Metadata}
 
     def create_input_object(command_module, opts) do
-
       function_name = BoundedContext.__function_name__(command_module, opts)
       input_object_fields = create_input_object_fields(command_module, opts)
 
@@ -34,9 +33,11 @@ if Code.ensure_loaded?(Absinthe) do
         field unquote(function_name), unquote(returns) do
           unquote_splicing(args)
 
-          resolve(fn args, _res ->
+          resolve(fn args, resolution ->
             attrs = Map.get(args, :input, args)
-            BoundedContext.__dispatch_command__(unquote(command_module), attrs, unquote(opts))
+            opts = Metadata.merge(resolution, unquote(opts))
+
+            BoundedContext.__dispatch_command__(unquote(command_module), attrs, opts)
           end)
         end
       end

@@ -69,6 +69,7 @@ if Code.ensure_loaded?(Absinthe.Relay) do
       field =
         quote location: :keep do
           Guards.ensure_is_query!(unquote(query_module))
+
           Query.create_connection_query(
             unquote(query_module),
             unquote(return_type),

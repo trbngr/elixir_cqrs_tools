@@ -209,11 +209,13 @@ defmodule Cqrs.Command do
       require Documentation
 
       @field_docs Documentation.field_docs("Fields", @schema_fields, @required_fields)
+      @name __MODULE__ |> Module.split() |> Enum.reverse() |> hd() |> to_string()
 
       def __fields__, do: @schema_fields
       def __field_docs__, do: @field_docs
       def __module_docs__, do: @moduledoc
-      def __command__, do: String.trim_leading(to_string(__MODULE__), "Elixir.")
+      def __command__, do: __MODULE__
+      def __name__, do: @name
     end
   end
 

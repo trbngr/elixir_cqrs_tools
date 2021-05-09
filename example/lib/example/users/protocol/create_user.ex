@@ -20,4 +20,10 @@ defmodule Example.Users.Protocol.CreateUser do
   def after_validate(%{email: email} = command) do
     Map.put(command, :id, UUID.uuid5(:oid, email))
   end
+
+  @impl true
+  def before_dispatch(command, opts) do
+    IO.inspect(Map.get(opts, :metadata), label: "metadata")
+    {:ok, command}
+  end
 end

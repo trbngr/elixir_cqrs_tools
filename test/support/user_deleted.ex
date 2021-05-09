@@ -6,7 +6,6 @@ defmodule DeleteUser do
   def handle_dispatch(command, _opts) do
     {:ok, UserDeleted.new(command)}
   end
-
 end
 
 defmodule UserDeleted do
@@ -14,5 +13,4 @@ defmodule UserDeleted do
     from: DeleteUser,
     with: [:from],
     version: 2
-
 end
