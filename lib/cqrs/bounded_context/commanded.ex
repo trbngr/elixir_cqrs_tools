@@ -1,5 +1,4 @@
-
-  if Code.ensure_loaded?(Commanded) do
+if Code.ensure_loaded?(Commanded) do
   defmodule Cqrs.BoundedContext.Commanded do
     @moduledoc """
     If you are a `Commanded` user, you have already registered your commands with your commanded routers.
@@ -61,4 +60,4 @@
       end
     end
   end
-  end
+end
