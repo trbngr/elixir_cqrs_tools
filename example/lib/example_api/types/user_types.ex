@@ -2,8 +2,6 @@ defmodule ExampleApi.Types.UserTypes do
   @moduledoc false
   use Cqrs.Absinthe
   use Cqrs.Absinthe.Relay
-  use Absinthe.Schema.Notation
-  use Absinthe.Relay.Schema.Notation, :modern
 
   alias Example.Queries.{ListUsers, GetUser}
   alias Example.Users.Protocol.{CreateUser, SuspendUser, ReinstateUser}

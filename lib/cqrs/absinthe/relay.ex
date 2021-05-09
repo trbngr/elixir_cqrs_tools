@@ -12,6 +12,8 @@ if Code.ensure_loaded?(Absinthe.Relay) do
 
     defmacro __using__(_) do
       quote do
+        use Absinthe.Relay.Schema.Notation, :modern
+
         import Cqrs.Absinthe.Relay, only: [derive_connection: 3]
       end
     end
