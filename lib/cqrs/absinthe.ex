@@ -78,6 +78,7 @@ if Code.ensure_loaded?(Absinthe) do
     """
     defmacro derive_query(query_module, return_type, opts \\ []) do
       opts = Keyword.merge(opts, source: query_module, macro: :derive_query)
+      return_type = Macro.escape(return_type)
 
       field =
         quote location: :keep do
@@ -134,6 +135,8 @@ if Code.ensure_loaded?(Absinthe) do
         opts
         |> Keyword.merge(source: command_module, macro: :derive_mutation)
         |> Keyword.drop([:only, :except])
+
+      return_type = Macro.escape(return_type)
 
       mutation =
         quote location: :keep do
