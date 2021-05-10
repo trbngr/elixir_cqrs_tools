@@ -195,7 +195,7 @@ defmodule Cqrs.BoundedContext do
       #{unquote(query_module).__filter_docs__()}
       """
       def unquote(:"#{function_name}_query")(filters \\ [], opts \\ []) do
-        BoundedContext.create_query(unquote(query_module), filters, opts)
+        BoundedContext.__create_query__(unquote(query_module), filters, opts)
       end
 
       @doc """
@@ -203,7 +203,7 @@ defmodule Cqrs.BoundedContext do
       #{unquote(query_module).__filter_docs__()}
       """
       def unquote(:"#{function_name}_query!")(filters \\ [], opts \\ []) do
-        BoundedContext.create_query!(unquote(query_module), filters, opts)
+        BoundedContext.__create_query__!(unquote(query_module), filters, opts)
       end
     end
   end
@@ -245,11 +245,11 @@ defmodule Cqrs.BoundedContext do
 
   def __handle_command_result__(_result, _other), do: raise("'then' should be a function/1")
 
-  def create_query(module, attrs, opts) do
+  def __create_query__(module, attrs, opts) do
     module.new(attrs, opts)
   end
 
-  def create_query!(module, attrs, opts) do
+  def __create_query__!(module, attrs, opts) do
     module.new!(attrs, opts)
   end
 
