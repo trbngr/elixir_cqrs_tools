@@ -224,6 +224,7 @@ defmodule Cqrs.Query do
   defp normalize(values) when is_struct(values), do: Map.from_struct(values)
   defp normalize(values) when is_map(values), do: values
 
+  @doc false
   def execute(mod, {:ok, query}, opts), do: mod.handle_execute(query, opts)
   def execute(_mod, {:error, query}, _opts), do: {:error, query}
   def execute(mod, %Ecto.Query{} = query, opts), do: mod.handle_execute(query, opts)
