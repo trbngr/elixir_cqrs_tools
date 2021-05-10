@@ -4,10 +4,10 @@ defmodule ExampleApi.Middleware.HandleExceptions do
 
   @behaviour Absinthe.Middleware
 
+  alias Cqrs.CommandError
   alias Absinthe.Resolution
   alias Ecto.Query.CastError
-  alias AbsintheErrorPayload.ChangesetParser
-  alias Ecto.{InvalidChangesetError, NoResultsError, StaleEntryError}
+  alias Ecto.{NoResultsError, StaleEntryError}
 
   def apply(middleware) when is_list(middleware) do
     Enum.map(middleware, fn
@@ -35,15 +35,19 @@ defmodule ExampleApi.Middleware.HandleExceptions do
         {:error, [message: "Not found.", status: 404, detail: Exception.message(e)]}
       )
 
-    e in InvalidChangesetError ->
+    e in CommandError ->
       errors =
-        e.changeset
-        |> ChangesetParser.extract_messages()
-        |> Enum.map(&"#{&1.field} #{&1.message}")
+        e.command
+        |> Ecto.Changeset.traverse_errors(fn {msg, opts} ->
+          Enum.reduce(opts, msg, fn {key, value}, acc ->
+            String.replace(acc, "%{#{key}}", to_string(value))
+          end)
+        end)
 
       Resolution.put_result(resolution, {:error, errors})
 
     e ->
+      __STACKTRACE__|> IO.inspect(label: "__STACKTRACE__")
       Logger.error("Unexpected error", stacktrace: __STACKTRACE__ |> Enum.map(&Tuple.to_list/1))
       Resolution.put_result(resolution, {:error, Exception.message(e)})
   end

@@ -23,7 +23,7 @@ defmodule Example.Users.Protocol.CreateUser do
 
   @impl true
   def before_dispatch(command, opts) do
-    IO.inspect(Map.get(opts, :metadata), label: "metadata")
+    IO.inspect(Keyword.get(opts, :metadata), label: "metadata")
     {:ok, command}
   end
 end
