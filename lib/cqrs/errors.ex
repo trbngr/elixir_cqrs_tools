@@ -19,6 +19,13 @@ defmodule Cqrs.InvalidRouterError do
     do: "#{module |> Module.split() |> Enum.join(".")} is not a Commanded.Commands.Router"
 end
 
+defmodule Cqrs.InvalidDispatcherError do
+  defexception [:dispatcher]
+
+  def message(%{dispatcher: module}),
+    do: "#{module |> Module.split() |> Enum.join(".")} is required to export a dispatch/2 function."
+end
+
 defmodule Cqrs.QueryError do
   defexception [:query]
 

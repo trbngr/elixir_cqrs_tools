@@ -1,10 +1,10 @@
 defmodule Cqrs.Guards do
   @moduledoc false
-  alias Cqrs.{InvalidCommandError, InvalidQueryError, InvalidRouterError}
+  alias Cqrs.{InvalidCommandError, InvalidDispatcherError, InvalidQueryError, InvalidRouterError}
 
   def ensure_is_struct!(module) do
     unless exports_function?(module, :__struct__, 0) do
-      raise "#{module} should be a valid struct."
+      raise "#{module |> Module.split() |> Enum.join(".")} should be a valid struct."
     end
   end
 
@@ -28,7 +28,7 @@ defmodule Cqrs.Guards do
 
   def ensure_is_dispatcher!(module) do
     unless exports_function?(module, :dispatch, 2) do
-      raise "#{module} is required to export a dispatch/2 function."
+      raise InvalidDispatcherError, dispatcher: module
     end
   end
 
