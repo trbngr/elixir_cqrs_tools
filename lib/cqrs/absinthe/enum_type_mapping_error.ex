@@ -5,7 +5,7 @@ defmodule Cqrs.Absinthe.EnumTypeMappingError do
     example = """
       #{macro} #{source}, :return_type,
         as: :query_name,
-        arg_typs: [#{IO.ANSI.format([:red, to_string(type), ": :existing_absinthe_enum_type"])}]
+        arg_types: [#{IO.ANSI.format([:red, to_string(type), ": :existing_absinthe_enum_type"])}]
     """
 
     """
