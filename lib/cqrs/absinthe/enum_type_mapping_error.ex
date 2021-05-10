@@ -1,18 +1,20 @@
-defmodule Cqrs.Absinthe.EnumTypeMappingError do
-  defexception [:source, :macro, :type]
+if Code.ensure_loaded?(Absinthe) do
+  defmodule Cqrs.Absinthe.EnumTypeMappingError do
+    defexception [:source, :macro, :type]
 
-  def message(%{source: source, macro: macro, type: type}) do
-    example = """
+    def message(%{source: source, macro: macro, type: type}) do
+      example = """
       #{macro} #{source}, :return_type,
-        as: :query_name,
-        arg_types: [#{IO.ANSI.format([:red, to_string(type), ": :existing_absinthe_enum_type"])}]
-    """
+      as: :query_name,
+      arg_types: [#{IO.ANSI.format([:red, to_string(type), ": :existing_absinthe_enum_type"])}]
+      """
 
-    """
-    Missing absinthe enum type for the type #{source}.#{type}.
+      """
+      Missing absinthe enum type for the type #{source}.#{type}.
 
-    Example:
-    #{IO.ANSI.format([:blue, example])}
-    """
+      Example:
+      #{IO.ANSI.format([:blue, example])}
+      """
+    end
   end
 end
