@@ -11,11 +11,17 @@ defmodule Cqrs.Absinthe.Metadata do
       |> Keyword.get(:metadata, %{})
       |> Enum.into(%{})
 
-    context = Map.drop(context, [:__absinthe_plug__, :pubsub])
+    context = Map.take(context, metadata_keys())
     metadata = Map.merge(context, existing_metadata)
 
     Keyword.put(opts, :metadata, metadata)
   end
 
   def merge(_, opts), do: opts
+
+  defp metadata_keys do
+    :cqrs_tools
+    |> Application.get_env(:absinthe, [])
+    |> Keyword.get(:context_metadata_keys, [])
+  end
 end

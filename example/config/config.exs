@@ -1,6 +1,7 @@
 import Config
 
 config :cqrs_tools, :absinthe_relay, repo: Example.Repo
+config :cqrs_tools, :absinthe, context_metadata_keys: [:user]
 
 config :example, ExampleApi.Endpoint,
   pubsub_server: Example.PubSub,

@@ -3,6 +3,12 @@ if Code.ensure_loaded?(Absinthe) do
     @moduledoc """
     Macros to derive queries and mutations from [Queries](`Cqrs.Query`) and [Commands](`Cqrs.Command`), respectfully.
 
+    ## Configuration
+
+    * `:context_metadata_keys` - A list of the keys in the `Absinthe.Resolution` `context` to pass to queries and mutations as metadata
+
+        config :cqrs_tools, :absinthe, context_metadata_keys: []
+
     ## Example
 
         defmodule ExampleApi.Types.UserTypes do
