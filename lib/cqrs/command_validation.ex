@@ -75,19 +75,36 @@ defmodule Cqrs.CommandValidation do
   @spec run(t(), keyword()) :: {:ok, command()} | {:error, list()}
   def run(%__MODULE__{command: command} = validation, opts \\ []) do
     case collect_errors(validation, opts) do
-      [] -> {:ok, command}
-      errors -> {:error, Keyword.get_values(errors, :error)}
+      [] ->
+        {:ok, command}
+
+      errors ->
+        {:error,
+         errors
+         |> Keyword.get_values(:error)
+         |> Enum.sort()}
     end
   end
 
   defp collect_errors(%{command: command, validations: validations}, opts) do
+    stream_opts = [
+      on_timeout: :kill_task,
+      timeout: Keyword.get(opts, :timeout, 5000),
+      max_concurrency: Keyword.get(opts, :max_concurrency, System.schedulers_online())
+    ]
+
     run_validation = fn
-      fun, acc when is_function(fun, 1) -> [fun.(command) | acc]
-      fun, acc when is_function(fun, 2) -> [fun.(command, opts) | acc]
+      fun when is_function(fun, 1) -> fun.(command)
+      fun when is_function(fun, 2) -> fun.(command, opts)
     end
 
     validations
-    |> Enum.reduce([], run_validation)
+    |> Task.async_stream(run_validation, stream_opts)
+    |> Stream.map(&elem(&1, 1))
+    |> Stream.map(fn
+      :timeout -> {:error, :timeout}
+      other -> other
+    end)
     |> Enum.filter(&match?({:error, _}, &1))
   end
 end
