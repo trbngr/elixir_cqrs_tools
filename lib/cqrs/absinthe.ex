@@ -39,7 +39,7 @@ if Code.ensure_loaded?(Absinthe) do
               as: :user,
               except: [:name]
 
-            derive_query ListUsers, :user,
+            derive_query ListUsers, list_of(:user),
               as: :users,
               arg_types: [status: :user_status]
           end
