@@ -185,7 +185,7 @@ defmodule Cqrs.Command do
   end
 
   defmacro __schema__ do
-    quote location: :keep do
+    quote generated: true, location: :keep do
       use Ecto.Schema
 
       if Code.ensure_loaded?(Jason), do: @derive(Jason.Encoder)

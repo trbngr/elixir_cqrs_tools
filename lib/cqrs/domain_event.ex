@@ -36,7 +36,7 @@ defmodule Cqrs.DomainEvent do
   alias Cqrs.{DomainEvent, Guards}
 
   defmacro __using__(opts) do
-    quote do
+    quote generated: true, location: :keep do
       version = Keyword.get(unquote(opts), :version, 1)
       inherited_keys = DomainEvent.inherit_keys(unquote(opts))
       explicit_keys = Keyword.get(unquote(opts), :with, []) |> List.wrap()
