@@ -140,10 +140,12 @@ defmodule Cqrs.Command do
 
   defmacro __using__(opts \\ []) do
     require_all_fields = Keyword.get(opts, :require_all_fields, true)
+    create_jason_encoders = Application.get_env(:cqrs_tools, :create_jason_encoders, true)
 
     quote location: :keep do
       Module.put_attribute(__MODULE__, :require_all_fields, unquote(require_all_fields))
       Module.put_attribute(__MODULE__, :dispatcher, Keyword.get(unquote(opts), :dispatcher))
+      Module.put_attribute(__MODULE__, :create_jason_encoders, unquote(create_jason_encoders))
 
       Module.register_attribute(__MODULE__, :events, accumulate: true)
       Module.register_attribute(__MODULE__, :schema_fields, accumulate: true)
@@ -175,6 +177,7 @@ defmodule Cqrs.Command do
       Module.delete_attribute(__MODULE__, :schema_fields)
       Module.delete_attribute(__MODULE__, :required_fields)
       Module.delete_attribute(__MODULE__, :require_all_fields)
+      Module.delete_attribute(__MODULE__, :create_jason_encoders)
     end
   end
 
@@ -188,7 +191,8 @@ defmodule Cqrs.Command do
     quote generated: true, location: :keep do
       use Ecto.Schema
 
-      if Code.ensure_loaded?(Jason), do: @derive(Jason.Encoder)
+      if @create_jason_encoders and Code.ensure_loaded?(Jason), do: @derive(Jason.Encoder)
+
       @primary_key false
       embedded_schema do
         Ecto.Schema.field(:created_at, :utc_datetime)

@@ -36,13 +36,15 @@ defmodule Cqrs.DomainEvent do
   alias Cqrs.{DomainEvent, Guards}
 
   defmacro __using__(opts) do
+    create_jason_encoders = Application.get_env(:cqrs_tools, :create_jason_encoders, true)
+
     quote generated: true, location: :keep do
       version = Keyword.get(unquote(opts), :version, 1)
       inherited_keys = DomainEvent.inherit_keys(unquote(opts))
       explicit_keys = Keyword.get(unquote(opts), :with, []) |> List.wrap()
       keys_to_drop = Keyword.get(unquote(opts), :drop, []) |> List.wrap()
 
-      if Code.ensure_loaded?(Jason), do: @derive(Jason.Encoder)
+      if unquote(create_jason_encoders) and Code.ensure_loaded?(Jason), do: @derive(Jason.Encoder)
 
       defstruct (inherited_keys ++ explicit_keys)
                 |> Enum.reject(&Enum.member?(keys_to_drop, &1))
