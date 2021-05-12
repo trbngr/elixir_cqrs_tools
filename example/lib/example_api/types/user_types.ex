@@ -23,7 +23,7 @@ defmodule ExampleApi.Types.UserTypes do
   connection(node_type: :user)
 
   object :user_queries do
-    derive_query GetUser, :user,
+    derive_query GetUser, list_of(:user),
       as: :user,
       except: [:name]
 
