@@ -64,7 +64,11 @@ if Code.ensure_loaded?(Absinthe.Relay) do
         end
     """
     defmacro derive_connection(query_module, return_type, opts) do
-      opts = Keyword.merge(opts, source: query_module, macro: :derive_connection)
+      opts =
+        opts
+        |> Keyword.merge(source: query_module, macro: :derive_connection)
+        |> Macro.escape()
+
       return_type = Macro.escape(return_type)
 
       field =

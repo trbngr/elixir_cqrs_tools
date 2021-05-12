@@ -83,7 +83,11 @@ if Code.ensure_loaded?(Absinthe) do
     * `:except` - Create filters for all except those listed
     """
     defmacro derive_query(query_module, return_type, opts \\ []) do
-      opts = Keyword.merge(opts, source: query_module, macro: :derive_query)
+      opts =
+        opts
+        |> Keyword.merge(source: query_module, macro: :derive_query)
+        |> Macro.escape()
+
       return_type = Macro.escape(return_type)
 
       field =
@@ -112,6 +116,7 @@ if Code.ensure_loaded?(Absinthe) do
         opts
         |> Keyword.merge(source: command_module, macro: :derive_mutation_input)
         |> Keyword.drop([:only, :except])
+        |> Macro.escape()
 
       input =
         quote location: :keep do
@@ -141,6 +146,7 @@ if Code.ensure_loaded?(Absinthe) do
         opts
         |> Keyword.merge(source: command_module, macro: :derive_mutation)
         |> Keyword.drop([:only, :except])
+        |> Macro.escape()
 
       return_type = Macro.escape(return_type)
 
