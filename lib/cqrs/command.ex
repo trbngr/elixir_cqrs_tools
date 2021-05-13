@@ -307,7 +307,7 @@ defmodule Cqrs.Command do
         end
 
       opts = Keyword.put(unquote(opts), :required, required)
-      @schema_fields {unquote(name), unquote(Macro.escape(type)), opts}
+      @schema_fields {unquote(name), unquote(type), opts}
     end
   end
 
