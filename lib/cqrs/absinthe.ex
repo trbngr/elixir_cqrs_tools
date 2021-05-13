@@ -83,16 +83,14 @@ if Code.ensure_loaded?(Absinthe) do
     * `:except` - Create filters for all except those listed
     """
     defmacro derive_query(query_module, return_type, opts \\ []) do
-      opts =
-        opts
-        |> Keyword.merge(source: query_module, macro: :derive_query)
-        |> Macro.escape()
-
+      opts = Macro.escape(opts)
       return_type = Macro.escape(return_type)
 
       field =
         quote location: :keep do
           Guards.ensure_is_query!(unquote(query_module))
+
+          opts = Keyword.merge(unquote(opts), source: unquote(query_module), macro: :derive_query)
 
           Query.create_query(
             unquote(query_module),
@@ -112,16 +110,17 @@ if Code.ensure_loaded?(Absinthe) do
     * `:as` - The name to use for the query. Defaults to the command_module name snake_cased with `_input` appended.
     """
     defmacro derive_mutation_input(command_module, opts \\ []) do
-      opts =
-        opts
-        |> Keyword.merge(source: command_module, macro: :derive_mutation_input)
-        |> Keyword.drop([:only, :except])
-        |> Macro.escape()
+      opts = Macro.escape(opts)
 
       input =
         quote location: :keep do
+          opts =
+            unquote(opts)
+            |> Keyword.merge(source: unquote(command_module), macro: :derive_mutation_input)
+            |> Keyword.drop([:only, :except])
+
           Guards.ensure_is_command!(unquote(command_module))
-          Mutation.create_input_object(unquote(command_module), unquote(opts))
+          Mutation.create_input_object(unquote(command_module), opts)
         end
 
       Module.eval_quoted(__CALLER__, input)
@@ -142,17 +141,17 @@ if Code.ensure_loaded?(Absinthe) do
 
     """
     defmacro derive_mutation(command_module, return_type, opts \\ []) do
-      opts =
-        opts
-        |> Keyword.merge(source: command_module, macro: :derive_mutation)
-        |> Keyword.drop([:only, :except])
-        |> Macro.escape()
-
+      opts = Macro.escape(opts)
       return_type = Macro.escape(return_type)
 
       mutation =
         quote location: :keep do
           Guards.ensure_is_command!(unquote(command_module))
+
+          opts =
+            unquote(opts)
+            |> Keyword.merge(source: unquote(command_module), macro: :derive_mutation)
+            |> Keyword.drop([:only, :except])
 
           Mutation.create_mutatation(
             unquote(command_module),

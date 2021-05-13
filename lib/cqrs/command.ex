@@ -157,8 +157,13 @@ defmodule Cqrs.Command do
       @before_compile Command
       @after_compile Command
 
+      @impl true
       def handle_validate(command, _opts), do: command
+
+      @impl true
       def after_validate(command), do: command
+
+      @impl true
       def before_dispatch(command, _opts), do: {:ok, command}
 
       defoverridable handle_validate: 2, before_dispatch: 2, after_validate: 1

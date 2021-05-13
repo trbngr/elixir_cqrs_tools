@@ -84,6 +84,7 @@ defmodule Cqrs.Query do
       @behaviour Query
       @before_compile Query
 
+      @impl true
       def handle_validate(changeset, _opts), do: changeset
 
       defoverridable handle_validate: 2
