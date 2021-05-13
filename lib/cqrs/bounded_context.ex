@@ -165,17 +165,18 @@ defmodule Cqrs.BoundedContext do
     quote location: :keep do
       Guards.ensure_is_query!(unquote(query_module))
       function_name = BoundedContext.__function_name__(unquote(query_module), unquote(opts))
-      @queries {unquote(query_module), function_name}
+      @queries {unquote(query_module), function_name, unquote(opts)}
     end
   end
 
-  def __query_proxy__({query_module, function_name}) do
+  def __query_proxy__({query_module, function_name, opts}) do
     quote do
       @doc """
       #{unquote(query_module).__module_docs__()}
       #{unquote(query_module).__filter_docs__()}
       """
       def unquote(function_name)(filters \\ [], opts \\ []) do
+        opts = Keyword.merge(unquote(opts), opts)
         BoundedContext.__execute_query__(unquote(query_module), filters, opts)
       end
 
@@ -184,6 +185,7 @@ defmodule Cqrs.BoundedContext do
       #{unquote(query_module).__filter_docs__()}
       """
       def unquote(:"#{function_name}!")(filters \\ [], opts \\ []) do
+        opts = Keyword.merge(unquote(opts), opts)
         BoundedContext.__execute_query__!(unquote(query_module), filters, opts)
       end
 
@@ -224,26 +226,18 @@ defmodule Cqrs.BoundedContext do
   end
 
   def __dispatch_command__(module, attrs, opts) do
-    then = Keyword.get(opts, :then, &Function.identity/1)
-
     attrs
     |> module.new(opts)
     |> module.dispatch(opts)
-    |> __handle_command_result__(then)
+    |> __handle_result__(opts)
   end
 
   def __dispatch_command__!(module, attrs, opts) do
-    then = Keyword.get(opts, :then, &Function.identity/1)
-
     attrs
     |> module.new!(opts)
     |> module.dispatch(opts)
-    |> __handle_command_result__(then)
+    |> __handle_result__(opts)
   end
-
-  def __handle_command_result__(result, fun) when is_function(fun, 1), do: fun.(result)
-
-  def __handle_command_result__(_result, _other), do: raise("'then' should be a function/1")
 
   def __create_query__(module, attrs, opts) do
     module.new(attrs, opts)
@@ -257,11 +251,20 @@ defmodule Cqrs.BoundedContext do
     attrs
     |> module.new(opts)
     |> module.execute(opts)
+    |> __handle_result__(opts)
   end
 
   def __execute_query__!(module, attrs, opts) do
     attrs
     |> module.new!(opts)
     |> module.execute(opts)
+    |> __handle_result__(opts)
+  end
+
+  def __handle_result__(result, opts) do
+    case Keyword.get(opts, :then, &Function.identity/1) do
+      fun  when is_function(fun, 1) -> fun.(result)
+      _ -> raise("'then' should be a function/1")
+    end
   end
 end
