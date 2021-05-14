@@ -258,6 +258,7 @@ defmodule Cqrs.Command do
       end
 
       if @dispatcher do
+        @impl true
         def handle_dispatch(%__MODULE__{} = cmd, opts) do
           @dispatcher.dispatch(cmd, opts)
         end
