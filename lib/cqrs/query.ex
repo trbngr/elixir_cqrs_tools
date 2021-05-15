@@ -14,6 +14,10 @@ defmodule Cqrs.Query do
 
         filter :email, :string, required: true
 
+        option :exists?, :boolean,
+          default: false,
+          description: "If `true`, only check if the user exists."
+
         @impl true
         def handle_validate(filters, _opts) do
           Ecto.Changeset.validate_format(filters, :email, ~r/@/)
@@ -26,7 +30,10 @@ defmodule Cqrs.Query do
 
         @impl true
         def handle_execute(query, opts) do
-          {:ok, Repo.all(query, opts)}
+          case Keyword.get(opts, :exists?) do
+            true -> Repo.exists?(query, opts)
+            false -> Repo.one(query, opts)
+          end
         end
       end
 
