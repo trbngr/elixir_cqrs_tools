@@ -75,11 +75,12 @@ defmodule Cqrs.Query do
 
     quote location: :keep do
       Module.register_attribute(__MODULE__, :filters, accumulate: true)
+      Module.register_attribute(__MODULE__, :options, accumulate: true)
       Module.register_attribute(__MODULE__, :required_filters, accumulate: true)
       Module.put_attribute(__MODULE__, :require_all_filters, unquote(require_all_filters))
 
       import Ecto.Query
-      import Query, only: [filter: 2, filter: 3]
+      import Query, only: [filter: 2, filter: 3, option: 3]
 
       @behaviour Query
       @before_compile Query
@@ -99,6 +100,9 @@ defmodule Cqrs.Query do
       Query.__execute__()
 
       Module.delete_attribute(__MODULE__, :filters)
+      Module.delete_attribute(__MODULE__, :options)
+      Module.delete_attribute(__MODULE__, :option_docs)
+      Module.delete_attribute(__MODULE__, :filter_docs)
       Module.delete_attribute(__MODULE__, :required_filters)
       Module.delete_attribute(__MODULE__, :require_all_filters)
     end
@@ -109,10 +113,20 @@ defmodule Cqrs.Query do
       require Documentation
 
       @filter_docs Documentation.field_docs("Filters", @filters, @required_filters)
+      @option_docs Documentation.option_docs(@options)
       @name __MODULE__ |> Module.split() |> Enum.reverse() |> hd() |> to_string()
 
+      Module.put_attribute(
+        __MODULE__,
+        :moduledoc,
+        {1, @moduledoc <> "\n" <> @filter_docs <> "\n" <> @option_docs}
+      )
+
+      @default_opts Enum.map(@options, fn {name, _type, opts} ->
+                      {name, Keyword.get(opts, :default)}
+                    end)
+
       def __filters__, do: @filters
-      def __filter_docs__, do: @filter_docs
       def __module_docs__, do: @moduledoc
       def __query__, do: __MODULE__
       def __name__, do: @name
@@ -138,6 +152,10 @@ defmodule Cqrs.Query do
 
   defmacro __constructor__ do
     quote generated: true, location: :keep do
+      defp get_opts(opts) do
+        Keyword.merge(@default_opts, opts, fn _key, _default, provided -> provided end)
+      end
+
       @spec new(Query.filters(), keyword()) :: {:ok, Ecto.Query.t()} | {:error, any()}
       @spec new!(Query.filters(), keyword()) :: Ecto.Query.t()
 
@@ -149,7 +167,7 @@ defmodule Cqrs.Query do
       #{@filter_docs}
       """
       def new(filters \\ [], opts \\ []) when is_list(opts),
-        do: Query.__new__(__MODULE__, filters, @required_filters, opts)
+        do: Query.__new__(__MODULE__, filters, @required_filters, get_opts(opts))
 
       @doc """
       Creates a new `#{__MODULE__} query.`
@@ -157,15 +175,31 @@ defmodule Cqrs.Query do
       #{@filter_docs}
       """
       def new!(filters \\ [], opts \\ []) when is_list(opts),
-        do: Query.__new__!(__MODULE__, filters, @required_filters, opts)
+        do: Query.__new__!(__MODULE__, filters, @required_filters, get_opts(opts))
     end
   end
 
   defmacro __execute__ do
     quote generated: true, location: :keep do
       def execute(query, opts \\ []) do
-        Query.execute(__MODULE__, query, opts)
+        Query.execute(__MODULE__, query, get_opts(opts))
       end
+    end
+  end
+
+  @doc """
+  Describes a supported option for this query.
+
+  ## Options
+  * `:default` - this default value if the option is not provided.
+  * `:description` - The documentation for this option.
+  """
+
+  @spec option(name :: atom(), type :: atom(), keyword()) :: any()
+  defmacro option(name, type, opts) do
+    quote do
+      opts = Keyword.put_new(unquote(opts), :default, nil)
+      @options {unquote(name), unquote(type), opts}
     end
   end
 

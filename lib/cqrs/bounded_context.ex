@@ -123,7 +123,6 @@ defmodule Cqrs.BoundedContext do
     quote do
       @doc """
       #{unquote(command_module).__module_docs__()}
-      #{unquote(command_module).__field_docs__()}
       """
       def unquote(function_name)(attrs \\ [], opts \\ []) do
         opts = Keyword.merge(unquote(opts), opts)
@@ -132,7 +131,6 @@ defmodule Cqrs.BoundedContext do
 
       @doc """
       #{unquote(command_module).__module_docs__()}
-      #{unquote(command_module).__field_docs__()}
       """
       def unquote(:"#{function_name}!")(attrs \\ [], opts \\ []) do
         opts = Keyword.merge(unquote(opts), opts)
@@ -173,7 +171,6 @@ defmodule Cqrs.BoundedContext do
     quote do
       @doc """
       #{unquote(query_module).__module_docs__()}
-      #{unquote(query_module).__filter_docs__()}
       """
       def unquote(function_name)(filters \\ [], opts \\ []) do
         opts = Keyword.merge(unquote(opts), opts)
@@ -182,7 +179,6 @@ defmodule Cqrs.BoundedContext do
 
       @doc """
       #{unquote(query_module).__module_docs__()}
-      #{unquote(query_module).__filter_docs__()}
       """
       def unquote(:"#{function_name}!")(filters \\ [], opts \\ []) do
         opts = Keyword.merge(unquote(opts), opts)
@@ -194,7 +190,7 @@ defmodule Cqrs.BoundedContext do
 
       @doc """
       Creates #{query_headline_modifier} [#{query_name}](`#{unquote(query_module)}`) query without executing it.
-      #{unquote(query_module).__filter_docs__()}
+      #{unquote(query_module).__module_docs__()}
       """
       def unquote(:"#{function_name}_query")(filters \\ [], opts \\ []) do
         BoundedContext.__create_query__(unquote(query_module), filters, opts)
@@ -202,7 +198,7 @@ defmodule Cqrs.BoundedContext do
 
       @doc """
       Creates #{query_headline_modifier} [#{query_name}](`#{unquote(query_module)}`) query without executing it.
-      #{unquote(query_module).__filter_docs__()}
+      #{unquote(query_module).__module_docs__()}
       """
       def unquote(:"#{function_name}_query!")(filters \\ [], opts \\ []) do
         BoundedContext.__create_query__!(unquote(query_module), filters, opts)

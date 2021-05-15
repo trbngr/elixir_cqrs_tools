@@ -10,6 +10,10 @@ defmodule Example.Queries.GetUser do
   filter :email, :string
   filter :name, :string
 
+  option :exists?, :boolean,
+    default: false,
+    description: "If `true`, only check if the user exists."
+
   @impl true
   def handle_create([], _opts), do: {:error, :missing_filters}
 

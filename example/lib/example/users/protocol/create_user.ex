@@ -4,10 +4,11 @@ defmodule Example.Users.Protocol.CreateUser do
   """
   use Cqrs.Command, dispatcher: Example.App
 
-  field :name, :string
-  field :email, :string
-
   field :id, :binary_id, internal: true
+  field :name, :string, description: "The user's name"
+  field :email, :string, description: "The user's email."
+
+  option :metadata, :map, default: %{}, description: "User metadata"
 
   derive_event UserCreated, with: [status: :active]
 

@@ -148,10 +148,11 @@ defmodule Cqrs.Command do
       Module.put_attribute(__MODULE__, :create_jason_encoders, unquote(create_jason_encoders))
 
       Module.register_attribute(__MODULE__, :events, accumulate: true)
+      Module.register_attribute(__MODULE__, :options, accumulate: true)
       Module.register_attribute(__MODULE__, :schema_fields, accumulate: true)
       Module.register_attribute(__MODULE__, :required_fields, accumulate: true)
 
-      import Command, only: [field: 2, field: 3, derive_event: 1, derive_event: 2]
+      import Command, only: [field: 2, field: 3, derive_event: 1, derive_event: 2, option: 3]
 
       @behaviour Command
       @before_compile Command
@@ -179,6 +180,9 @@ defmodule Cqrs.Command do
       Command.__events__()
 
       Module.delete_attribute(__MODULE__, :events)
+      Module.delete_attribute(__MODULE__, :options)
+      Module.delete_attribute(__MODULE__, :field_docs)
+      Module.delete_attribute(__MODULE__, :option_docs)
       Module.delete_attribute(__MODULE__, :schema_fields)
       Module.delete_attribute(__MODULE__, :required_fields)
       Module.delete_attribute(__MODULE__, :require_all_fields)
@@ -218,10 +222,20 @@ defmodule Cqrs.Command do
       require Documentation
 
       @field_docs Documentation.field_docs("Fields", @schema_fields, @required_fields)
+      @option_docs Documentation.option_docs(@options)
       @name __MODULE__ |> Module.split() |> Enum.reverse() |> hd() |> to_string()
 
+      Module.put_attribute(
+        __MODULE__,
+        :moduledoc,
+        {1, @moduledoc <> "\n" <> @field_docs <> "\n" <> @option_docs}
+      )
+
+      @default_opts Enum.map(@options, fn {name, _type, opts} ->
+                      {name, Keyword.get(opts, :default)}
+                    end)
+
       def __fields__, do: @schema_fields
-      def __field_docs__, do: @field_docs
       def __module_docs__, do: @moduledoc
       def __command__, do: __MODULE__
       def __name__, do: @name
@@ -230,31 +244,35 @@ defmodule Cqrs.Command do
 
   defmacro __constructor__ do
     quote generated: true, location: :keep do
+      defp get_opts(opts) do
+        Keyword.merge(@default_opts, opts, fn _key, _default, provided -> provided end)
+      end
+
       # @spec new(maybe_improper_list() | map(), maybe_improper_list()) :: CommandState.t()
       # @spec new!(maybe_improper_list() | map(), maybe_improper_list()) :: %__MODULE__{}
 
       @doc """
       Creates a new `#{__MODULE__} command.`
 
-      #{@field_docs}
+      #{@moduledoc}
       """
       def new(attrs \\ [], opts \\ []) when is_list(opts),
-        do: Command.__new__(__MODULE__, attrs, @required_fields, opts)
+        do: Command.__new__(__MODULE__, attrs, @required_fields, get_opts(opts))
 
       @doc """
       Creates a new `#{__MODULE__} command.`
 
-      #{@field_docs}
+      #{@moduledoc}
       """
       def new!(attrs \\ [], opts \\ []) when is_list(opts),
-        do: Command.__new__!(__MODULE__, attrs, @required_fields, opts)
+        do: Command.__new__!(__MODULE__, attrs, @required_fields, get_opts(opts))
     end
   end
 
   defmacro __dispatch__ do
     quote location: :keep do
       def dispatch(command, opts \\ []) do
-        Command.__do_dispatch__(__MODULE__, command, opts)
+        Command.__do_dispatch__(__MODULE__, command, get_opts(opts))
       end
 
       if @dispatcher do
@@ -314,6 +332,22 @@ defmodule Cqrs.Command do
 
       opts = Keyword.put(unquote(opts), :required, required)
       @schema_fields {unquote(name), unquote(type), opts}
+    end
+  end
+
+  @doc """
+  Describes a supported option for this command.
+
+  ## Options
+  * `:default` - this default value if the option is not provided.
+  * `:description` - The documentation for this option.
+  """
+
+  @spec option(name :: atom(), type :: atom(), keyword()) :: any()
+  defmacro option(name, type, opts) do
+    quote do
+      opts = Keyword.put_new(unquote(opts), :default, nil)
+      @options {unquote(name), unquote(type), opts}
     end
   end
 

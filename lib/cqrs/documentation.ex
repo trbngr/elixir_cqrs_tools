@@ -2,6 +2,33 @@ defmodule Cqrs.Documentation do
   @moduledoc false
   alias Cqrs.Documentation
 
+  defmacro option_docs(options) do
+    quote bind_quoted: [options: options] do
+      docs =
+        Enum.map(options, fn {name, type, opts} ->
+          default = Keyword.get(opts, :default, "nil")
+
+          description =
+            case Keyword.get(opts, :description) do
+              nil -> ""
+              desc -> ". " <> String.trim_trailing(desc, ".") <> "."
+            end
+
+          "* `#{name}`: `:#{type}`#{description} Defaults to `#{inspect(default)}`.\n"
+        end)
+
+      if length(docs) > 0 do
+        """
+        ## Options
+
+        #{docs}
+        """
+      else
+        ""
+      end
+    end
+  end
+
   defmacro field_docs(title, fields, required_fields) do
     quote bind_quoted: [title: title, fields: fields, required_fields: required_fields] do
       {required_fields, optional_fields} =
@@ -16,6 +43,7 @@ defmodule Cqrs.Documentation do
       ## #{title}
 
       #{required_field_docs}
+
       #{optional_field_docs}
       """
     end
@@ -29,8 +57,8 @@ defmodule Cqrs.Documentation do
         |> Enum.map(fn {name, type, opts} ->
           description =
             case Keyword.get(opts, :description) do
-              nil -> nil
-              description -> "- #{description}"
+              nil -> ""
+              desc -> ". " <> String.trim_trailing(desc, ".") <> "."
             end
 
           field_type =
@@ -40,17 +68,22 @@ defmodule Cqrs.Documentation do
               _ -> type
             end
 
+            defaults =
+              case Keyword.get(opts, :default) do
+                nil -> nil
+                default ->  "Defaults to `#{inspect(default)}`."
+              end
+
           """
-
-          * `#{name}` :#{field_type} #{description}
-
+          * `#{name}`: `:#{field_type}`#{description} #{defaults}
           """
         end)
 
       if length(field_docs) > 0 do
         """
-        ### #{unquote(title)} #{field_docs}
+        ### #{unquote(title)}
 
+        #{field_docs}
         """
       end
     end
