@@ -6,8 +6,9 @@ if Code.ensure_loaded?(Absinthe) do
     ## Configuration
 
     * `:context_metadata_keys` - A list of the keys in the `Absinthe.Resolution` `context` to pass to queries and mutations as metadata
+    * `:type_mappings` - A list of mappings from ecto types to absinthe types.
 
-        config :cqrs_tools, :absinthe, context_metadata_keys: []
+        config :cqrs_tools, :absinthe, context_metadata_keys: [], type_mappings: [map: :json]
 
     ## Example
 

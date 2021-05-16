@@ -23,6 +23,17 @@ if Code.ensure_loaded?(Absinthe) do
       end)
     end
 
+    defp absinthe_type({name, :map, _}, opts) do
+      source = Keyword.get(opts, :source)
+      macro = Keyword.get(opts, :macro)
+
+      map_type =
+        get_configured_type_mapping(:map) || get_named_arg_type_mapping(name, opts) ||
+          raise Cqrs.Absinthe.MapTypeMappingError, source: source, macro: macro, type: name
+
+      quote do: unquote(map_type)
+    end
+
     defp absinthe_type({name, {:array, type}, _}, opts) do
       type = absinthe_type({name, type, nil}, opts)
       quote do: list_of(unquote(type))
@@ -33,9 +44,7 @@ if Code.ensure_loaded?(Absinthe) do
       macro = Keyword.get(opts, :macro)
 
       enum_type =
-        opts
-        |> Keyword.get(:arg_types, [])
-        |> Keyword.get(name) ||
+        get_named_arg_type_mapping(name, opts) ||
           raise Cqrs.Absinthe.EnumTypeMappingError, source: source, macro: macro, type: name
 
       quote do: unquote(enum_type)
@@ -43,5 +52,18 @@ if Code.ensure_loaded?(Absinthe) do
 
     defp absinthe_type({_name, :binary_id, _}, _opts), do: quote(do: :id)
     defp absinthe_type({_name, type, _}, _opts), do: quote(do: unquote(type))
+
+    defp get_configured_type_mapping(type) do
+      :cqrs_tools
+      |> Application.get_env(:absinthe, [])
+      |> Keyword.get(:type_mappings, [])
+      |> Keyword.get(type)
+    end
+
+    def get_named_arg_type_mapping(name, opts) do
+      opts
+      |> Keyword.get(:arg_types, [])
+      |> Keyword.get(name)
+    end
   end
 end
