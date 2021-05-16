@@ -101,6 +101,7 @@ defmodule Cqrs.Query do
 
   defmacro __before_compile__(_env) do
     quote location: :keep do
+      Query.__module_docs__()
       Query.__introspection__()
       Query.__schema__()
       Query.__constructor__()
@@ -117,17 +118,7 @@ defmodule Cqrs.Query do
 
   defmacro __introspection__ do
     quote do
-      require Documentation
-
-      @filter_docs Documentation.field_docs("Filters", @filters, @required_filters)
-      @option_docs Documentation.option_docs(@options)
       @name __MODULE__ |> Module.split() |> Enum.reverse() |> hd() |> to_string()
-
-      Module.put_attribute(
-        __MODULE__,
-        :moduledoc,
-        {1, @moduledoc <> "\n" <> @filter_docs <> "\n" <> @option_docs}
-      )
 
       @default_opts Enum.map(@options, fn {name, _type, opts} ->
                       {name, Keyword.get(opts, :default)}
@@ -137,6 +128,22 @@ defmodule Cqrs.Query do
       def __module_docs__, do: @moduledoc
       def __query__, do: __MODULE__
       def __name__, do: @name
+    end
+  end
+
+  defmacro __module_docs__ do
+    quote do
+      require Documentation
+
+      moduledoc = @moduledoc || ""
+      @filter_docs Documentation.field_docs("Filters", @filters, @required_filters)
+      @option_docs Documentation.option_docs(@options)
+
+      Module.put_attribute(
+        __MODULE__,
+        :moduledoc,
+        {1, moduledoc <> @filter_docs <> "\n" <> @option_docs}
+      )
     end
   end
 

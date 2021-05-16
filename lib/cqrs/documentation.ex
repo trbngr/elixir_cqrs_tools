@@ -11,10 +11,18 @@ defmodule Cqrs.Documentation do
           description =
             case Keyword.get(opts, :description) do
               nil -> ""
-              desc -> ". " <> String.trim_trailing(desc, ".") <> "."
+              desc -> """
+
+                #{desc}
+              """
             end
 
-          "* `#{name}`: `:#{type}`#{description} Defaults to `#{inspect(default)}`.\n"
+            type = cond do
+              is_binary(type) -> type
+              true -> inspect(type)
+            end
+
+          "* `#{name}`: `#{type}`. Defaults to `#{inspect(default)}`.#{description}\n"
         end)
 
       if length(docs) > 0 do
@@ -75,7 +83,7 @@ defmodule Cqrs.Documentation do
               end
 
           """
-          * `#{name}`: `:#{field_type}`#{description} #{defaults}
+          * `#{name}`: `#{field_type}`#{description} #{defaults}
           """
         end)
 

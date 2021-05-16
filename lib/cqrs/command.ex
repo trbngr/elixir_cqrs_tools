@@ -173,6 +173,7 @@ defmodule Cqrs.Command do
 
   defmacro __before_compile__(_env) do
     quote location: :keep do
+      Command.__module_docs__()
       Command.__schema__()
       Command.__introspection__()
       Command.__constructor__()
@@ -219,17 +220,7 @@ defmodule Cqrs.Command do
 
   defmacro __introspection__ do
     quote do
-      require Documentation
-
-      @field_docs Documentation.field_docs("Fields", @schema_fields, @required_fields)
-      @option_docs Documentation.option_docs(@options)
       @name __MODULE__ |> Module.split() |> Enum.reverse() |> hd() |> to_string()
-
-      Module.put_attribute(
-        __MODULE__,
-        :moduledoc,
-        {1, @moduledoc <> "\n" <> @field_docs <> "\n" <> @option_docs}
-      )
 
       @default_opts Enum.map(@options, fn {name, _type, opts} ->
                       {name, Keyword.get(opts, :default)}
@@ -239,6 +230,22 @@ defmodule Cqrs.Command do
       def __module_docs__, do: @moduledoc
       def __command__, do: __MODULE__
       def __name__, do: @name
+    end
+  end
+
+  defmacro __module_docs__ do
+    quote do
+      require Documentation
+
+      moduledoc = @moduledoc || ""
+      @field_docs Documentation.field_docs("Fields", @schema_fields, @required_fields)
+      @option_docs Documentation.option_docs(@options)
+
+      Module.put_attribute(
+        __MODULE__,
+        :moduledoc,
+        {1, moduledoc <> @field_docs <> "\n" <> @option_docs}
+      )
     end
   end
 
