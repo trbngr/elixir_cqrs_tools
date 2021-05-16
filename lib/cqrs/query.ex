@@ -86,6 +86,13 @@ defmodule Cqrs.Query do
       Module.register_attribute(__MODULE__, :required_filters, accumulate: true)
       Module.put_attribute(__MODULE__, :require_all_filters, unquote(require_all_filters))
 
+      @options {:tag?, :boolean,
+                [
+                  default: false,
+                  description:
+                    "If `true`, the result of the query will be tagged with an `:ok` or `:error` tuple."
+                ]}
+
       import Ecto.Query
       import Query, only: [filter: 2, filter: 3, option: 3]
 
@@ -120,7 +127,7 @@ defmodule Cqrs.Query do
     quote do
       @name __MODULE__ |> Module.split() |> Enum.reverse() |> hd() |> to_string()
 
-      @default_opts Enum.map(@options, fn {name, _type, opts} ->
+      @default_opts Enum.map(@options, fn {name, _hint, opts} ->
                       {name, Keyword.get(opts, :default)}
                     end)
 
@@ -207,11 +214,19 @@ defmodule Cqrs.Query do
   * `:description` - The documentation for this option.
   """
 
-  @spec option(name :: atom(), type :: atom(), keyword()) :: any()
-  defmacro option(name, type, opts) do
+  @spec option(name :: atom(), {:enum, possible_values :: list()}, keyword()) :: any()
+  defmacro option(name, {:enum, possible_values}, opts) when is_atom(name) and is_list(opts) and is_list(possible_values) do
     quote do
       opts = Keyword.put_new(unquote(opts), :default, nil)
-      @options {unquote(name), unquote(type), opts}
+      @options {unquote(name), {:enum, unquote(possible_values)}, opts}
+    end
+  end
+
+  @spec option(name :: atom(), hint :: atom(), keyword()) :: any()
+  defmacro option(name, hint, opts) do
+    quote do
+      opts = Keyword.put_new(unquote(opts), :default, nil)
+      @options {unquote(name), unquote(hint), opts}
     end
   end
 
@@ -272,7 +287,20 @@ defmodule Cqrs.Query do
   defp normalize(values) when is_map(values), do: values
 
   @doc false
-  def execute(mod, {:ok, query}, opts), do: mod.handle_execute(query, opts)
+  def execute(mod, {:ok, query}, opts), do: do_execute(mod, query, opts)
   def execute(_mod, {:error, query}, _opts), do: {:error, query}
-  def execute(mod, %Ecto.Query{} = query, opts), do: mod.handle_execute(query, opts)
+  def execute(mod, %Ecto.Query{} = query, opts), do: do_execute(mod, query, opts)
+
+  defp do_execute(mod, query, opts) do
+    tag? = Keyword.get(opts, :tag?)
+
+    query
+    |> mod.handle_execute(opts)
+    |> tag_result(tag?)
+  end
+
+  defp tag_result({:ok, result}, true), do: {:ok, result}
+  defp tag_result({:error, result}, true), do: {:error, result}
+  defp tag_result(result, true), do: {:ok, result}
+  defp tag_result(result, _), do: result
 end

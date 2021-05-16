@@ -5,35 +5,52 @@ defmodule Cqrs.Documentation do
   defmacro option_docs(options) do
     quote bind_quoted: [options: options] do
       docs =
-        Enum.map(options, fn {name, type, opts} ->
-          default = Keyword.get(opts, :default, "nil")
+        options
+        |> Enum.sort_by(&elem(&1, 0))
+        |> Enum.map(fn
+          {name, {:enum, possible_values}, opts} ->
+            default = Documentation.option_default(opts)
+            description = Documentation.option_description(opts)
 
-          description =
-            case Keyword.get(opts, :description) do
-              nil -> ""
-              desc -> """
+            values =
+              possible_values
+              |> Enum.map(&"`#{&1}`")
+              |> Enum.join(" | ")
 
-                #{desc}
-              """
-            end
+            "* `#{name}`: `:enum`.#{description}Possible values: #{values}. Defaults to `#{inspect(default)}`."
 
-            type = cond do
-              is_binary(type) -> type
-              true -> inspect(type)
-            end
+          {name, hint, opts} ->
+            default = Documentation.option_default(opts)
+            description = Documentation.option_description(opts)
 
-          "* `#{name}`: `#{type}`. Defaults to `#{inspect(default)}`.#{description}\n"
+            hint =
+              cond do
+                is_binary(hint) -> hint
+                true -> inspect(hint)
+              end
+            "* `#{name}`: `#{hint}`.#{description}Defaults to `#{inspect(default)}`"
         end)
 
       if length(docs) > 0 do
         """
         ## Options
 
-        #{docs}
+        #{Enum.join(docs, "\n")}
         """
       else
         ""
       end
+    end
+  end
+
+  def option_default(opts) do
+    Keyword.get(opts, :default, "nil")
+  end
+
+  def option_description(opts) do
+    case Keyword.get(opts, :description) do
+      nil -> ""
+      desc -> " #{String.trim_trailing(desc, ".")}. "
     end
   end
 
@@ -62,6 +79,7 @@ defmodule Cqrs.Documentation do
       field_docs =
         unquote(fields)
         |> Enum.reject(fn {_name, _type, opts} -> Keyword.get(opts, :internal, false) end)
+        |> Enum.sort_by(&elem(&1, 0))
         |> Enum.map(fn {name, type, opts} ->
           description =
             case Keyword.get(opts, :description) do
@@ -76,11 +94,11 @@ defmodule Cqrs.Documentation do
               _ -> type
             end
 
-            defaults =
-              case Keyword.get(opts, :default) do
-                nil -> nil
-                default ->  "Defaults to `#{inspect(default)}`."
-              end
+          defaults =
+            case Keyword.get(opts, :default) do
+              nil -> nil
+              default -> "Defaults to `#{inspect(default)}`."
+            end
 
           """
           * `#{name}`: `#{field_type}`#{description} #{defaults}

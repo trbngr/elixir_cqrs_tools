@@ -154,6 +154,13 @@ defmodule Cqrs.Command do
 
       import Command, only: [field: 2, field: 3, derive_event: 1, derive_event: 2, option: 3]
 
+      @options {:tag?, :boolean,
+                [
+                  default: false,
+                  description:
+                  "If `true`, the result of the query will be tagged with an `:ok` or `:error` tuple."
+                ]}
+
       @behaviour Command
       @before_compile Command
       @after_compile Command
@@ -222,7 +229,7 @@ defmodule Cqrs.Command do
     quote do
       @name __MODULE__ |> Module.split() |> Enum.reverse() |> hd() |> to_string()
 
-      @default_opts Enum.map(@options, fn {name, _type, opts} ->
+      @default_opts Enum.map(@options, fn {name, _hint, opts} ->
                       {name, Keyword.get(opts, :default)}
                     end)
 
@@ -348,11 +355,19 @@ defmodule Cqrs.Command do
   * `:description` - The documentation for this option.
   """
 
-  @spec option(name :: atom(), type :: atom(), keyword()) :: any()
-  defmacro option(name, type, opts) do
+  @spec option(name :: atom(), {:enum, possible_values :: list()}, keyword()) :: any()
+  defmacro option(name, {:enum, possible_values}, opts) when is_atom(name) and is_list(opts) and is_list(possible_values) do
     quote do
       opts = Keyword.put_new(unquote(opts), :default, nil)
-      @options {unquote(name), unquote(type), opts}
+      @options {unquote(name), {:enum, unquote(possible_values)}, opts}
+    end
+  end
+
+  @spec option(name :: atom(), hint :: atom(), keyword()) :: any()
+  defmacro option(name, hint, opts) when is_atom(name) and is_list(opts) do
+    quote do
+      opts = Keyword.put_new(unquote(opts), :default, nil)
+      @options {unquote(name), unquote(hint), opts}
     end
   end
 
@@ -434,7 +449,16 @@ defmodule Cqrs.Command do
 
   def __do_dispatch__(mod, command, opts) do
     with {:ok, command} <- mod.before_dispatch(command, opts) do
-      mod.handle_dispatch(command, opts)
+      tag? = Keyword.get(opts, :tag?)
+
+      command
+      |> mod.handle_dispatch(opts)
+      |> tag_result(tag?)
     end
   end
+
+  defp tag_result({:ok, result}, true), do: {:ok, result}
+  defp tag_result({:error, result}, true), do: {:error, result}
+  defp tag_result(result, true), do: {:ok, result}
+  defp tag_result(result, _), do: result
 end
