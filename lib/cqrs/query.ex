@@ -86,15 +86,13 @@ defmodule Cqrs.Query do
       Module.register_attribute(__MODULE__, :required_filters, accumulate: true)
       Module.put_attribute(__MODULE__, :require_all_filters, unquote(require_all_filters))
 
-      @options {:tag?, :boolean,
-                [
-                  default: false,
-                  description:
-                    "If `true`, the result of the query will be tagged with an `:ok` or `:error` tuple."
-                ]}
+      require Cqrs.Options
 
       import Ecto.Query
-      import Query, only: [filter: 2, filter: 3, option: 3]
+      import Cqrs.Options, only: [option: 3]
+      import Query, only: [filter: 2, filter: 3]
+
+      @options Cqrs.Options.tag_option()
 
       @behaviour Query
       @before_compile Query
@@ -126,10 +124,6 @@ defmodule Cqrs.Query do
   defmacro __introspection__ do
     quote do
       @name __MODULE__ |> Module.split() |> Enum.reverse() |> hd() |> to_string()
-
-      @default_opts Enum.map(@options, fn {name, _hint, opts} ->
-                      {name, Keyword.get(opts, :default)}
-                    end)
 
       def __filters__, do: @filters
       def __module_docs__, do: @moduledoc
@@ -173,6 +167,7 @@ defmodule Cqrs.Query do
 
   defmacro __constructor__ do
     quote generated: true, location: :keep do
+      @default_opts Cqrs.Options.defaults()
       defp get_opts(opts), do: Keyword.merge(@default_opts, opts)
 
       @spec new(Query.filters(), keyword()) :: {:ok, Ecto.Query.t()} | {:error, any()}
@@ -203,30 +198,6 @@ defmodule Cqrs.Query do
       def execute(query, opts \\ []) do
         Query.execute(__MODULE__, query, get_opts(opts))
       end
-    end
-  end
-
-  @doc """
-  Describes a supported option for this query.
-
-  ## Options
-  * `:default` - this default value if the option is not provided.
-  * `:description` - The documentation for this option.
-  """
-
-  @spec option(name :: atom(), {:enum, possible_values :: list()}, keyword()) :: any()
-  defmacro option(name, {:enum, possible_values}, opts) when is_atom(name) and is_list(opts) and is_list(possible_values) do
-    quote do
-      opts = Keyword.put_new(unquote(opts), :default, nil)
-      @options {unquote(name), {:enum, unquote(possible_values)}, opts}
-    end
-  end
-
-  @spec option(name :: atom(), hint :: atom(), keyword()) :: any()
-  defmacro option(name, hint, opts) do
-    quote do
-      opts = Keyword.put_new(unquote(opts), :default, nil)
-      @options {unquote(name), unquote(hint), opts}
     end
   end
 
