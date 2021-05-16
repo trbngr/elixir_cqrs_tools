@@ -49,13 +49,11 @@ if Code.ensure_loaded?(Absinthe) do
           unquote_splicing(query_args)
 
           resolve(fn attrs, resolution ->
-            opts = Metadata.merge(resolution, unquote(opts))
+            opts = resolution
+            |> Metadata.merge(unquote(opts))
+            |> Keyword.put(:tag?, true)
 
-            case BoundedContext.__execute_query__(unquote(query_module), attrs, opts) do
-              {:ok, results} -> {:ok, results}
-              {:error, error} -> {:error, error}
-              results -> {:ok, results}
-            end
+            BoundedContext.__execute_query__(unquote(query_module), attrs, opts)
           end)
         end
       end
