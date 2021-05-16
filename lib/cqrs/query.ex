@@ -166,9 +166,7 @@ defmodule Cqrs.Query do
 
   defmacro __constructor__ do
     quote generated: true, location: :keep do
-      defp get_opts(opts) do
-        Keyword.merge(@default_opts, opts, fn _key, _default, provided -> provided end)
-      end
+      defp get_opts(opts), do: Keyword.merge(@default_opts, opts)
 
       @spec new(Query.filters(), keyword()) :: {:ok, Ecto.Query.t()} | {:error, any()}
       @spec new!(Query.filters(), keyword()) :: Ecto.Query.t()
