@@ -223,26 +223,31 @@ defmodule Cqrs.Query do
   def __new__(mod, filters, required_filters, opts) when is_list(opts) do
     fields = mod.__schema__(:fields)
 
-    query =
+    filters =
       struct(mod)
       |> Ecto.Changeset.cast(normalize(filters), fields)
       |> Ecto.Changeset.validate_required(required_filters)
       |> mod.handle_validate(opts)
       |> Ecto.Changeset.apply_action(:create)
 
+    case filters do
+      {:ok, filters} -> create_query(mod, filters, opts)
+      {:error, filters} -> {:error, filters}
+    end
+  end
+
+  defp create_query(mod, filters, opts) do
+    query =
+      filters
+      |> Map.from_struct()
+      |> Enum.reject(&match?({_, nil}, &1))
+      |> Enum.to_list()
+      |> mod.handle_create(opts)
+
     case query do
-      {:ok, query} ->
-        query =
-          query
-          |> Map.from_struct()
-          |> Enum.reject(&match?({_, nil}, &1))
-          |> Enum.to_list()
-          |> mod.handle_create(opts)
-
-        {:ok, query}
-
-      {:error, query} ->
-        {:error, query}
+      {:error, error} -> {:error, error}
+      {:ok, query} -> {:ok, query}
+      query -> {:ok, query}
     end
   end
 
