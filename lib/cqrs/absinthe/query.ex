@@ -23,7 +23,7 @@ if Code.ensure_loaded?(Absinthe) do
 
             opts = Metadata.merge(resolution, unquote(opts))
 
-            case BoundedContext.__create_query__(unquote(query_module), args, unquote(opts)) do
+            case BoundedContext.__create_query__(unquote(query_module), args, opts) do
               {:error, error} ->
                 {:error, error}
 
