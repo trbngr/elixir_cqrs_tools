@@ -1,4 +1,5 @@
 defmodule Cqrs.Query do
+  alias Ecto.Changeset
   @moduledoc """
   Defines a query and any filters.
 
@@ -20,7 +21,7 @@ defmodule Cqrs.Query do
 
         @impl true
         def handle_validate(filters, _opts) do
-          Ecto.Changeset.validate_format(filters, :email, ~r/@/)
+          Changeset.validate_format(filters, :email, ~r/@/)
         end
 
         @impl true
@@ -71,7 +72,7 @@ defmodule Cqrs.Query do
   @type filters :: keyword()
 
   @callback handle_create(filters(), opts()) :: query()
-  @callback handle_validate(Ecto.Changeset.t(), opts()) :: Ecto.Changeset.t()
+  @callback handle_validate(Changeset.t(), opts()) :: Changeset.t()
   @callback handle_execute(Ecto.Query.t(), opts()) ::
               {:ok, any()} | {:error, query()} | {:error, any()}
 
@@ -225,10 +226,10 @@ defmodule Cqrs.Query do
 
     filters =
       struct(mod)
-      |> Ecto.Changeset.cast(normalize(filters), fields)
-      |> Ecto.Changeset.validate_required(required_filters)
+      |> Changeset.cast(normalize(filters), fields)
+      |> Changeset.validate_required(required_filters)
       |> mod.handle_validate(opts)
-      |> Ecto.Changeset.apply_action(:create)
+      |> Changeset.apply_action(:create)
 
     case filters do
       {:ok, filters} -> create_query(mod, filters, opts)
@@ -245,10 +246,15 @@ defmodule Cqrs.Query do
       |> mod.handle_create(opts)
 
     case query do
-      {:error, error} -> {:error, error}
+      {:error, error} -> {:error, error_after_handle_create(error)}
       {:ok, query} -> {:ok, query}
       query -> {:ok, query}
     end
+  end
+
+  defp error_after_handle_create(error) do
+    %Changeset{types: [query: :map]}
+    |> Changeset.add_error(:query, error)
   end
 
   def __new__!(mod, filters, required_filters, opts \\ []) when is_list(opts) do
