@@ -51,6 +51,7 @@ if Code.ensure_loaded?(Absinthe) do
     end
 
     defp absinthe_type({_name, :binary_id, _}, _opts), do: quote(do: :id)
+    defp absinthe_type({_name, :utc_datetime, _}, _opts), do: quote(do: :datetime)
     defp absinthe_type({_name, type, _}, _opts), do: quote(do: unquote(type))
 
     defp get_configured_type_mapping(type) do
