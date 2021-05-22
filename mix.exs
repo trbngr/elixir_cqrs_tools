@@ -43,7 +43,8 @@ defmodule CqrsTools.MixProject do
       {:absinthe_relay, "~> 1.4", optional: true},
       {:commanded, "~> 1.0", optional: true},
       {:ex_doc, "~> 0.24", only: :dev, runtime: false},
-      {:elixir_uuid, "~> 1.6", override: true, hex: :uuid_utils, only: :test}
+      {:elixir_uuid, "~> 1.6", override: true, hex: :uuid_utils, only: :test},
+      {:git_hooks, "~> 0.6.2", only: [:dev], runtime: false}
     ]
   end
 end
