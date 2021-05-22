@@ -98,6 +98,7 @@ defmodule Cqrs.Query do
       import Query, only: [filter: 2, filter: 3, binding: 2]
 
       @options Cqrs.Options.tag_option()
+      @options Cqrs.Options.bang_option()
 
       @behaviour Query
       @before_compile Query

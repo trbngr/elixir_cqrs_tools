@@ -75,9 +75,11 @@ defmodule Cqrs.BoundedContext do
 
   ## Options
 
-  * `:after` - A function of one arity to run with the execution result.
+  * `:then` - A function of one arity to run with the execution result.
   """
   defmacro command(command_module, opts \\ []) do
+    opts = Macro.escape(opts)
+
     function_head =
       quote do
         function_name = BoundedContext.__function_name__(unquote(command_module), unquote(opts))
@@ -88,15 +90,7 @@ defmodule Cqrs.BoundedContext do
       quote location: :keep do
         function_name = BoundedContext.__function_name__(unquote(command_module), unquote(opts))
         Guards.ensure_is_command!(unquote(command_module))
-
-        then =
-          case Keyword.get(unquote(opts), :after, []) do
-            [] -> &Function.identity/1
-            fun when is_function(fun, 1) -> fun
-            list when is_list(list) -> Keyword.get(list, function_name, &Function.identity/1)
-          end
-
-        BoundedContext.__command_proxy__(unquote(command_module), function_name, then: then)
+        BoundedContext.__command_proxy__(unquote(command_module), function_name, unquote(opts))
       end
 
     quote do
@@ -159,6 +153,8 @@ defmodule Cqrs.BoundedContext do
   * `list_users_query/2`
   """
   defmacro query(query_module, opts \\ []) do
+    opts = Macro.escape(opts)
+
     function_head =
       quote do
         function_name = BoundedContext.__function_name__(unquote(query_module), unquote(opts))
@@ -284,6 +280,8 @@ defmodule Cqrs.BoundedContext do
   end
 
   def __execute_query__!(module, attrs, opts) do
+    opts = Keyword.put(opts, :bang?, true)
+
     attrs
     |> module.new!(opts)
     |> module.execute(opts)

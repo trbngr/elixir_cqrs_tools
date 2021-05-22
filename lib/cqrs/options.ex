@@ -8,6 +8,10 @@ defmodule Cqrs.Options do
      ]}
   end
 
+  def bang_option do
+    {:bang?, :boolean, [default: false]}
+  end
+
   defmacro defaults do
     quote do
       Enum.map(@options, fn {name, _hint, opts} ->

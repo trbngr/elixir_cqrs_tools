@@ -40,6 +40,8 @@ if Code.ensure_loaded?(Commanded) do
           ]
     """
     defmacro import_commands(router, opts \\ []) do
+      opts = Macro.escape(opts)
+
       quote do
         Guards.ensure_is_commanded_router!(unquote(router))
 
