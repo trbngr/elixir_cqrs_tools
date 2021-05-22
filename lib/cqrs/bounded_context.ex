@@ -17,14 +17,12 @@ defmodule Cqrs.BoundedContext do
 
   ### Commands
 
-      iex> {:error, {:invalid_command, state}} =
-      ...> Users.create_user(name: "chris", email: "wrong")
-      ...> state.errors
+      iex> {:error, {:invalid_command, errors}} = Users.create_user(name: "chris", email: "wrong")
+      ...> errors
       %{email: ["has invalid format"]}
 
-      iex> {:error, {:invalid_command, state}} =
-      ...> Users.create_user2(name: "chris", email: "wrong")
-      ...> state.errors
+      iex> {:error, {:invalid_command, errors}} =  Users.create_user2(name: "chris", email: "wrong")
+      ...> errors
       %{email: ["has invalid format"]}
 
       iex> Users.create_user(name: "chris", email: "chris@example.com")

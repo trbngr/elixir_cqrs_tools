@@ -1,5 +1,4 @@
 defmodule Cqrs.Command do
-  alias Cqrs.Command.CommandState
   alias Cqrs.{Command, CommandError, Documentation, DomainEvent, Guards}
 
   @moduledoc """
@@ -38,21 +37,23 @@ defmodule Cqrs.Command do
 
   ### Creation
 
-      iex> CreateUser.new()
-      #CreateUser<errors: %{email: [\"can't be blank\"], name: [\"can't be blank\"]}>
+      iex> {:error, errors} = CreateUser.new()
+      ...> errors
+      %{email: [\"can't be blank\"], name: [\"can't be blank\"]}
 
-      iex> CreateUser.new(email: "chris@example.com", name: "chris")
-      #CreateUser<%{email: \"chris@example.com\", id: \"052c1984-74c9-522f-858f-f04f1d4cc786\", name: \"chris\"}>
+      iex> {:ok, %CreateUser{email: email, name: name, id: id}} = CreateUser.new(email: "chris@example.com", name: "chris")
+      ...> %{email: email, name: name, id: id}
+      %{email: \"chris@example.com\", id: \"052c1984-74c9-522f-858f-f04f1d4cc786\", name: \"chris\"}
 
-      iex> %{id: "052c1984-74c9-522f-858f-f04f1d4cc786"} = CreateUser.new!(email: "chris@example.com", name: "chris")
+      iex> %CreateUser{id: "052c1984-74c9-522f-858f-f04f1d4cc786"} = CreateUser.new!(email: "chris@example.com", name: "chris")
 
 
   ### Dispatching
 
-      iex> {:error, {:invalid_command, state}} =
+      iex> {:error, {:invalid_command, errors}} =
       ...> CreateUser.new(name: "chris", email: "wrong")
       ...> |> CreateUser.dispatch()
-      ...> state.errors
+      ...> errors
       %{email: ["has invalid format"]}
 
       iex> CreateUser.new(name: "chris", email: "chris@example.com")
@@ -254,7 +255,7 @@ defmodule Cqrs.Command do
       @default_opts Cqrs.Options.defaults()
       defp get_opts(opts), do: Keyword.merge(@default_opts, opts)
 
-      # @spec new(maybe_improper_list() | map(), maybe_improper_list()) :: CommandState.t()
+      # @spec new(maybe_improper_list() | map(), maybe_improper_list()) :: struct()
       # @spec new!(maybe_improper_list() | map(), maybe_improper_list()) :: %__MODULE__{}
 
       @doc """
@@ -378,46 +379,51 @@ defmodule Cqrs.Command do
     mod
     |> __init__(attrs, required_fields, opts)
     |> Changeset.put_change(:created_at, DateTime.utc_now())
-    |> CommandState.new()
     |> case do
-      %{valid?: true} = state ->
+      %{valid?: false} = changeset ->
+        {:error, changeset}
+
+      %{valid?: true} = changeset ->
         attrs =
-          state
-          |> CommandState.apply_changes()
+          changeset
+          |> Changeset.apply_changes()
           |> mod.after_validate()
 
         mod
         |> __init__(attrs, required_fields, opts)
-        |> CommandState.merge(state)
-
-      state ->
-        state
+        |> Changeset.merge(changeset)
+        |> Changeset.apply_action(:create)
+    end
+    |> case do
+      {:ok, command} -> {:ok, command}
+      {:error, changeset} -> {:error, format_errors(changeset)}
     end
   end
 
   def __new__!(mod, attrs, required_fields, opts \\ []) when is_list(opts) do
-    case __new__(mod, attrs, required_fields, opts) |> CommandState.apply() do
+    case __new__(mod, attrs, required_fields, opts) do
       {:ok, command} -> command
       {:error, command} -> raise CommandError, command: command
     end
+  end
+
+  def format_errors(changeset) do
+    Changeset.traverse_errors(changeset, fn {message, opts} ->
+      Regex.replace(~r"%{(\w+)}", message, fn _, key ->
+        opts |> Keyword.get(String.to_existing_atom(key), key) |> to_string()
+      end)
+    end)
   end
 
   defp normalize(values) when is_list(values), do: Enum.into(values, %{})
   defp normalize(values) when is_struct(values), do: Map.from_struct(values)
   defp normalize(values) when is_map(values), do: values
 
-  def __do_dispatch__(mod, %CommandState{changeset: changeset} = state, opts) do
-    case changeset do
-      %{valid?: false} ->
-        {:error, {:invalid_command, state}}
-
-      _ ->
-        command = Ecto.Changeset.apply_changes(changeset)
-        __do_dispatch__(mod, command, opts)
-    end
+  def __do_dispatch__(_mod, {:error, changeset}, _opts) do
+    {:error, {:invalid_command, changeset}}
   end
 
-  def __do_dispatch__(mod, command, opts) do
+  def __do_dispatch__(mod, {:ok, command}, opts) do
     with {:ok, command} <- mod.before_dispatch(command, opts) do
       tag? = Keyword.get(opts, :tag?)
 
