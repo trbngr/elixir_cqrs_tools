@@ -7,6 +7,7 @@ locals_without_parens = [
   option: 3,
   command: 1,
   command: 2,
+  binding: 2,
   query: 1,
   query: 2,
   derive_query: 2,
