@@ -78,6 +78,7 @@ defmodule Cqrs.Query do
   @callback handle_validate(Changeset.t(), opts()) :: Changeset.t()
   @callback handle_execute(Ecto.Query.t(), opts()) ::
               {:ok, any()} | {:error, query()} | {:error, any()}
+  @callback handle_execute!(Ecto.Query.t(), opts()) :: any()
 
   alias Cqrs.{Documentation, Query, QueryError}
 
@@ -98,7 +99,6 @@ defmodule Cqrs.Query do
       import Query, only: [filter: 2, filter: 3, binding: 2]
 
       @options Cqrs.Options.tag_option()
-      @options Cqrs.Options.bang_option()
 
       @behaviour Query
       @before_compile Query
@@ -210,6 +210,10 @@ defmodule Cqrs.Query do
       def execute(query, opts \\ []) do
         Query.execute(__MODULE__, query, get_opts(opts))
       end
+
+      def execute!(query, opts \\ []) do
+        Query.execute!(__MODULE__, query, get_opts(opts))
+      end
     end
   end
 
@@ -289,15 +293,20 @@ defmodule Cqrs.Query do
   defp normalize(values) when is_map(values), do: values
 
   @doc false
-  def execute(mod, {:ok, query}, opts), do: do_execute(mod, query, opts)
+  def execute(mod, {:ok, query}, opts), do: do_execute(mod, :handle_execute, query, opts)
   def execute(_mod, {:error, query}, _opts), do: {:error, query}
-  def execute(mod, %Ecto.Query{} = query, opts), do: do_execute(mod, query, opts)
+  def execute(mod, %Ecto.Query{} = query, opts), do: do_execute(mod, :handle_execute, query, opts)
 
-  defp do_execute(mod, query, opts) do
+  @doc false
+  def execute!(mod, {:ok, query}, opts), do: do_execute(mod, :handle_execute!, query, opts)
+  def execute!(_mod, {:error, query}, _opts), do: {:error, query}
+  def execute!(mod, %Ecto.Query{} = query, opts), do: do_execute(mod, :handle_execute!, query, opts)
+
+  defp do_execute(mod, execute_fun, query, opts) do
     tag? = Keyword.get(opts, :tag?)
 
-    query
-    |> mod.handle_execute(opts)
+    mod
+    |> apply(execute_fun, [query, opts])
     |> tag_result(tag?)
   end
 

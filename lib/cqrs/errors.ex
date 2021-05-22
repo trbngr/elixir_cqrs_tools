@@ -23,8 +23,7 @@ defmodule Cqrs.InvalidDispatcherError do
   defexception [:dispatcher]
 
   def message(%{dispatcher: module}),
-    do:
-      "#{module |> Module.split() |> Enum.join(".")} is required to export a dispatch/2 function."
+    do: "#{module |> Module.split() |> Enum.join(".")} is required to export a dispatch/2 function."
 end
 
 defmodule Cqrs.QueryError do

@@ -284,7 +284,7 @@ defmodule Cqrs.BoundedContext do
 
     attrs
     |> module.new!(opts)
-    |> module.execute(opts)
+    |> module.execute!(opts)
     |> __handle_result__(opts)
   end
 

@@ -24,6 +24,7 @@ locals_without_parens = [
 [
   locals_without_parens: locals_without_parens,
   import_deps: [:ecto],
+  line_length: 120,
   export: [
     locals_without_parens: locals_without_parens
   ],
