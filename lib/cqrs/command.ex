@@ -403,9 +403,10 @@ defmodule Cqrs.Command do
           |> Changeset.apply_changes()
           |> mod.after_validate()
 
-        mod
-        |> __init__(attrs, required_fields, opts)
-        |> Changeset.merge(changeset)
+        changeset2 = __init__(mod, attrs, required_fields, opts)
+
+        changeset
+        |> Changeset.merge(changeset2)
         |> Changeset.apply_action(:create)
     end
     |> case do
