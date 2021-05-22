@@ -6,6 +6,7 @@ locals_without_parens = [
   filter: 3,
   option: 3,
   command: 1,
+  import_commands: 1,
   command: 2,
   binding: 2,
   query: 1,
