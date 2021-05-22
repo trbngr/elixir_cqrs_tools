@@ -23,37 +23,18 @@ defmodule Cqrs.InvalidDispatcherError do
   defexception [:dispatcher]
 
   def message(%{dispatcher: module}),
-    do: "#{module |> Module.split() |> Enum.join(".")} is required to export a dispatch/2 function."
+    do:
+      "#{module |> Module.split() |> Enum.join(".")} is required to export a dispatch/2 function."
 end
 
 defmodule Cqrs.QueryError do
-  defexception [:query]
+  defexception [:errors]
 
-  def message(%{query: query}) do
-    query
-    |> Ecto.Changeset.traverse_errors(&translate_error/1)
-    |> inspect()
-  end
-
-  defp translate_error({msg, opts}) do
-    Enum.reduce(opts, msg, fn {key, value}, acc ->
-      String.replace(acc, "%{#{key}}", to_string(value))
-    end)
-  end
+  def message(%{errors: errors}), do: inspect(errors)
 end
 
 defmodule Cqrs.CommandError do
-  defexception [:command]
+  defexception [:errors]
 
-  def message(%{command: command}) do
-    command
-    |> Ecto.Changeset.traverse_errors(&translate_error/1)
-    |> inspect()
-  end
-
-  defp translate_error({msg, opts}) do
-    Enum.reduce(opts, msg, fn {key, value}, acc ->
-      String.replace(acc, "%{#{key}}", to_string(value))
-    end)
-  end
+  def message(%{errors: errors}), do: inspect(errors)
 end

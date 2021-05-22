@@ -28,7 +28,8 @@ defmodule Cqrs.Documentation do
                 is_binary(hint) -> hint
                 true -> inspect(hint)
               end
-            "* `#{name}`: `#{hint}`.#{description}Defaults to `#{inspect(default)}`"
+
+            "* `#{name}` (#{hint}) - #{description}Defaults to `#{inspect(default)}`"
         end)
 
       if length(docs) > 0 do
@@ -51,6 +52,27 @@ defmodule Cqrs.Documentation do
     case Keyword.get(opts, :description) do
       nil -> ""
       desc -> " #{String.trim_trailing(desc, ".")}. "
+    end
+  end
+
+  defmacro query_binding_docs(bindings) do
+    quote do
+      docs =
+        Enum.map(unquote(bindings), fn {name, schema} ->
+          """
+          * `#{name}` (#{inspect(schema)})
+          """
+        end)
+
+      if length(docs) > 0 do
+        """
+        ## Named Bindings
+
+        #{docs}
+        """
+      else
+        ""
+      end
     end
   end
 
@@ -101,7 +123,7 @@ defmodule Cqrs.Documentation do
             end
 
           """
-          * `#{name}`: `#{field_type}`#{description} #{defaults}
+          * `#{name}` (#{field_type})#{description} #{defaults}
           """
         end)
 

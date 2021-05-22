@@ -39,7 +39,11 @@ if Code.ensure_loaded?(Absinthe) do
       quote do: list_of(unquote(type))
     end
 
-    defp absinthe_type({name, Ecto.Enum, _}, opts) do
+    defp absinthe_type({name, Ecto.Enum, field_opts}, opts) do
+      absinthe_type({name, :enum, field_opts}, opts)
+    end
+
+    defp absinthe_type({name, :enum, _}, opts) do
       source = Keyword.get(opts, :source)
       macro = Keyword.get(opts, :macro)
 

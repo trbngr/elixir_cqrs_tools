@@ -33,22 +33,16 @@ defmodule Cqrs.BoundedContext do
 
   ### Queries
 
-      iex> Users.get_user!()
-      ** (Cqrs.QueryError) %{email: ["can't be blank"]}
-
-      iex> Users.get_user2!()
-      ** (Cqrs.QueryError) %{email: ["can't be blank"]}
-
       iex> Users.get_user!(email: "wrong")
       ** (Cqrs.QueryError) %{email: ["has invalid format"]}
 
-      iex> {:error, %{errors: errors}} = Users.get_user()
+      iex> {:error, errors} = Users.get_user2(%{bad: "data"})
       ...> errors
-      [email: {"can't be blank", [validation: :required]}]
+      %{email: ["can't be blank"]}
 
-      iex> {:error, %{errors: errors}} = Users.get_user(email: "wrong")
+      iex> {:error, errors} = Users.get_user(email: "wrong")
       ...> errors
-      [email: {"has invalid format", [validation: :format]}]
+      %{email: ["has invalid format"]}
 
       iex> {:ok, query} = Users.get_user_query(email: "chris@example.com")
       ...> query
@@ -61,25 +55,7 @@ defmodule Cqrs.BoundedContext do
 
   defmacro __using__(_) do
     quote do
-      Module.register_attribute(__MODULE__, :queries, accumulate: true)
-      Module.register_attribute(__MODULE__, :commands, accumulate: true)
-
       import BoundedContext, only: [command: 1, command: 2, query: 1, query: 2]
-
-      @before_compile BoundedContext
-    end
-  end
-
-  defmacro __before_compile__(_env) do
-    quote do
-      commands = Enum.map(@commands, &BoundedContext.__command_proxy__/1)
-      queries = Enum.map(@queries, &BoundedContext.__query_proxy__/1)
-
-      Module.eval_quoted(__ENV__, commands)
-      Module.eval_quoted(__ENV__, queries)
-
-      Module.delete_attribute(__MODULE__, :queries)
-      Module.delete_attribute(__MODULE__, :commands)
     end
   end
 
@@ -102,27 +78,52 @@ defmodule Cqrs.BoundedContext do
   * `:after` - A function of one arity to run with the execution result.
   """
   defmacro command(command_module, opts \\ []) do
-    quote location: :keep do
-      Guards.ensure_is_command!(unquote(command_module))
-      function_name = BoundedContext.__function_name__(unquote(command_module), unquote(opts))
+    function_head =
+      quote do
+        function_name = BoundedContext.__function_name__(unquote(command_module), unquote(opts))
+        BoundedContext.__command_proxy_function_head__(unquote(command_module), function_name)
+      end
 
-      then =
-        case Keyword.get(unquote(opts), :after, []) do
-          [] -> &Function.identity/1
-          fun when is_function(fun, 1) -> fun
-          list when is_list(list) -> Keyword.get(list, function_name, &Function.identity/1)
-        end
+    proxies =
+      quote location: :keep do
+        function_name = BoundedContext.__function_name__(unquote(command_module), unquote(opts))
+        Guards.ensure_is_command!(unquote(command_module))
 
-      @commands {unquote(command_module), function_name, [then: then]}
+        then =
+          case Keyword.get(unquote(opts), :after, []) do
+            [] -> &Function.identity/1
+            fun when is_function(fun, 1) -> fun
+            list when is_list(list) -> Keyword.get(list, function_name, &Function.identity/1)
+          end
+
+        BoundedContext.__command_proxy__(unquote(command_module), function_name, then: then)
+      end
+
+    quote do
+      Module.eval_quoted(__ENV__, [unquote(function_head), unquote(proxies)])
     end
   end
 
-  def __command_proxy__({command_module, function_name, opts}) do
+  def __command_proxy_function_head__(command_module, function_name) do
+    quote do
+      required_fields = unquote(command_module).__required_fields__()
+
+      if length(required_fields) > 0 do
+        def unquote(function_name)(attrs, opts \\ [])
+        def unquote(:"#{function_name}!")(attrs, opts \\ [])
+      else
+        def unquote(function_name)(attrs \\ [], opts \\ [])
+        def unquote(:"#{function_name}!")(attrs \\ [], opts \\ [])
+      end
+    end
+  end
+
+  def __command_proxy__(command_module, function_name, opts) do
     quote do
       @doc """
       #{unquote(command_module).__module_docs__()}
       """
-      def unquote(function_name)(attrs \\ [], opts \\ []) do
+      def unquote(function_name)(attrs, opts) do
         opts = Keyword.merge(unquote(opts), opts)
         BoundedContext.__dispatch_command__(unquote(command_module), attrs, opts)
       end
@@ -130,7 +131,7 @@ defmodule Cqrs.BoundedContext do
       @doc """
       #{unquote(command_module).__module_docs__()}
       """
-      def unquote(:"#{function_name}!")(attrs \\ [], opts \\ []) do
+      def unquote(:"#{function_name}!")(attrs, opts) do
         opts = Keyword.merge(unquote(opts), opts)
         BoundedContext.__dispatch_command__!(unquote(command_module), attrs, opts)
       end
@@ -158,19 +159,53 @@ defmodule Cqrs.BoundedContext do
   * `list_users_query/2`
   """
   defmacro query(query_module, opts \\ []) do
-    quote location: :keep do
-      Guards.ensure_is_query!(unquote(query_module))
-      function_name = BoundedContext.__function_name__(unquote(query_module), unquote(opts))
-      @queries {unquote(query_module), function_name, unquote(opts)}
+    function_head =
+      quote do
+        function_name = BoundedContext.__function_name__(unquote(query_module), unquote(opts))
+        BoundedContext.__query_proxy_function_head__(unquote(query_module), function_name)
+      end
+
+    proxies =
+      quote location: :keep do
+        Guards.ensure_is_query!(unquote(query_module))
+        function_name = BoundedContext.__function_name__(unquote(query_module), unquote(opts))
+
+        BoundedContext.__query_proxy__(
+          unquote(query_module),
+          function_name,
+          unquote(opts)
+        )
+      end
+
+    quote do
+      Module.eval_quoted(__ENV__, [unquote(function_head), unquote(proxies)])
     end
   end
 
-  def __query_proxy__({query_module, function_name, opts}) do
+  def __query_proxy_function_head__(query_module, function_name) do
+    quote do
+      required_filters = unquote(query_module).__required_filters__()
+
+      if length(required_filters) > 0 do
+        def unquote(function_name)(filters, opts \\ [])
+        def unquote(:"#{function_name}!")(filters, opts \\ [])
+        def unquote(:"#{function_name}_query")(filters, opts \\ [])
+        def unquote(:"#{function_name}_query!")(filters, opts \\ [])
+      else
+        def unquote(function_name)(filters \\ [], opts \\ [])
+        def unquote(:"#{function_name}!")(filters \\ [], opts \\ [])
+        def unquote(:"#{function_name}_query")(filters \\ [], opts \\ [])
+        def unquote(:"#{function_name}_query!")(filters \\ [], opts \\ [])
+      end
+    end
+  end
+
+  def __query_proxy__(query_module, function_name, opts) do
     quote do
       @doc """
       #{unquote(query_module).__module_docs__()}
       """
-      def unquote(function_name)(filters \\ [], opts \\ []) do
+      def unquote(function_name)(filters, opts) do
         opts = Keyword.merge(unquote(opts), opts)
         BoundedContext.__execute_query__(unquote(query_module), filters, opts)
       end
@@ -178,7 +213,7 @@ defmodule Cqrs.BoundedContext do
       @doc """
       #{unquote(query_module).__module_docs__()}
       """
-      def unquote(:"#{function_name}!")(filters \\ [], opts \\ []) do
+      def unquote(:"#{function_name}!")(filters, opts) do
         opts = Keyword.merge(unquote(opts), opts)
         BoundedContext.__execute_query__!(unquote(query_module), filters, opts)
       end
@@ -190,7 +225,7 @@ defmodule Cqrs.BoundedContext do
       Creates #{query_headline_modifier} [#{query_name}](`#{unquote(query_module)}`) query without executing it.
       #{unquote(query_module).__module_docs__()}
       """
-      def unquote(:"#{function_name}_query")(filters \\ [], opts \\ []) do
+      def unquote(:"#{function_name}_query")(filters, opts) do
         BoundedContext.__create_query__(unquote(query_module), filters, opts)
       end
 
@@ -198,7 +233,7 @@ defmodule Cqrs.BoundedContext do
       Creates #{query_headline_modifier} [#{query_name}](`#{unquote(query_module)}`) query without executing it.
       #{unquote(query_module).__module_docs__()}
       """
-      def unquote(:"#{function_name}_query!")(filters \\ [], opts \\ []) do
+      def unquote(:"#{function_name}_query!")(filters, opts) do
         BoundedContext.__create_query__!(unquote(query_module), filters, opts)
       end
     end
@@ -257,7 +292,7 @@ defmodule Cqrs.BoundedContext do
 
   def __handle_result__(result, opts) do
     case Keyword.get(opts, :then, &Function.identity/1) do
-      fun  when is_function(fun, 1) -> fun.(result)
+      fun when is_function(fun, 1) -> fun.(result)
       _ -> raise("'then' should be a function/1")
     end
   end

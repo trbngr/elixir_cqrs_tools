@@ -1,5 +1,6 @@
 defmodule Cqrs.Query do
   alias Ecto.Changeset
+
   @moduledoc """
   Defines a query and any filters.
 
@@ -15,6 +16,8 @@ defmodule Cqrs.Query do
 
         filter :email, :string, required: true
 
+        binding :user, User
+
         option :exists?, :boolean,
           default: false,
           description: "If `true`, only check if the user exists."
@@ -26,7 +29,7 @@ defmodule Cqrs.Query do
 
         @impl true
         def handle_create([email: email], _opts) do
-          from u in User, where: u.email == ^email
+          from u in User, as: :user, where: u.email == ^email
         end
 
         @impl true
@@ -46,13 +49,13 @@ defmodule Cqrs.Query do
       iex> GetUser.new!(email: "wrong")
       ** (Cqrs.QueryError) %{email: ["has invalid format"]}
 
-      iex> {:error, %{errors: errors}} = GetUser.new()
+      iex> {:error, errors} = GetUser.new()
       ...> errors
-      [email: {"can't be blank", [validation: :required]}]
+      %{email: ["can't be blank"]}
 
-      iex> {:error, %{errors: errors}} = GetUser.new(email: "wrong")
+      iex> {:error, errors} = GetUser.new(email: "wrong")
       ...> errors
-      [email: {"has invalid format", [validation: :format]}]
+      %{email: ["has invalid format"]}
 
       iex> {:ok, query} = GetUser.new(email: "chris@example.com")
       ...> query
@@ -84,6 +87,7 @@ defmodule Cqrs.Query do
     quote location: :keep do
       Module.register_attribute(__MODULE__, :filters, accumulate: true)
       Module.register_attribute(__MODULE__, :options, accumulate: true)
+      Module.register_attribute(__MODULE__, :bindings, accumulate: true)
       Module.register_attribute(__MODULE__, :required_filters, accumulate: true)
       Module.put_attribute(__MODULE__, :require_all_filters, unquote(require_all_filters))
 
@@ -91,7 +95,7 @@ defmodule Cqrs.Query do
 
       import Ecto.Query
       import Cqrs.Options, only: [option: 3]
-      import Query, only: [filter: 2, filter: 3]
+      import Query, only: [filter: 2, filter: 3, binding: 2]
 
       @options Cqrs.Options.tag_option()
 
@@ -115,6 +119,7 @@ defmodule Cqrs.Query do
 
       Module.delete_attribute(__MODULE__, :filters)
       Module.delete_attribute(__MODULE__, :options)
+      Module.delete_attribute(__MODULE__, :bindings)
       Module.delete_attribute(__MODULE__, :option_docs)
       Module.delete_attribute(__MODULE__, :filter_docs)
       Module.delete_attribute(__MODULE__, :required_filters)
@@ -127,6 +132,7 @@ defmodule Cqrs.Query do
       @name __MODULE__ |> Module.split() |> Enum.reverse() |> hd() |> to_string()
 
       def __filters__, do: @filters
+      def __required_filters__, do: @required_filters
       def __module_docs__, do: @moduledoc
       def __query__, do: __MODULE__
       def __name__, do: @name
@@ -140,11 +146,12 @@ defmodule Cqrs.Query do
       moduledoc = @moduledoc || ""
       @filter_docs Documentation.field_docs("Filters", @filters, @required_filters)
       @option_docs Documentation.option_docs(@options)
+      @binding_docs Documentation.query_binding_docs(@bindings)
 
       Module.put_attribute(
         __MODULE__,
         :moduledoc,
-        {1, moduledoc <> @filter_docs <> "\n" <> @option_docs}
+        {1, moduledoc <> @filter_docs <> "\n" <> @binding_docs <> "\n" <> @option_docs}
       )
     end
   end
@@ -156,6 +163,9 @@ defmodule Cqrs.Query do
       @primary_key false
       embedded_schema do
         Enum.map(@filters, fn
+          {name, :enum, opts} ->
+            Ecto.Schema.field(name, Ecto.Enum, opts)
+
           {name, :binary_id, opts} ->
             Ecto.Schema.field(name, Ecto.UUID, opts)
 
@@ -221,6 +231,12 @@ defmodule Cqrs.Query do
     end
   end
 
+  defmacro binding(name, schema) do
+    quote do
+      @bindings {unquote(name), unquote(schema)}
+    end
+  end
+
   def __new__(mod, filters, required_filters, opts) when is_list(opts) do
     fields = mod.__schema__(:fields)
 
@@ -233,7 +249,7 @@ defmodule Cqrs.Query do
 
     case filters do
       {:ok, filters} -> create_query(mod, filters, opts)
-      {:error, filters} -> {:error, filters}
+      {:error, filters} -> {:error, format_errors(filters)}
     end
   end
 
@@ -246,22 +262,25 @@ defmodule Cqrs.Query do
       |> mod.handle_create(opts)
 
     case query do
-      {:error, error} -> {:error, error_after_handle_create(error)}
+      {:error, error} -> {:error, %{query: error}}
       {:ok, query} -> {:ok, query}
       query -> {:ok, query}
     end
   end
 
-  defp error_after_handle_create(error) do
-    %Changeset{types: [query: :map]}
-    |> Changeset.add_error(:query, error)
-  end
-
   def __new__!(mod, filters, required_filters, opts \\ []) when is_list(opts) do
     case __new__(mod, filters, required_filters, opts) do
       {:ok, query} -> query
-      {:error, query} -> raise QueryError, query: query
+      {:error, errors} -> raise QueryError, errors: errors
     end
+  end
+
+  def format_errors(changeset) do
+    Changeset.traverse_errors(changeset, fn {message, opts} ->
+      Regex.replace(~r"%{(\w+)}", message, fn _, key ->
+        opts |> Keyword.get(String.to_existing_atom(key), key) |> to_string()
+      end)
+    end)
   end
 
   defp normalize(values) when is_list(values), do: Enum.into(values, %{})

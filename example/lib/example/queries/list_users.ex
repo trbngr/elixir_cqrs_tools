@@ -8,7 +8,7 @@ defmodule Example.Queries.ListUsers do
 
   filter :email, :string
   filter :name, :string
-  filter :status, Ecto.Enum, values: [:active, :suspended]
+  filter :status, :enum, values: [:active, :suspended]
 
   @impl true
   def handle_create(filters, opts) do

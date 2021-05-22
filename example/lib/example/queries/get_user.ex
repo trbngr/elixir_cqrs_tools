@@ -4,11 +4,15 @@ defmodule Example.Queries.GetUser do
 
   @moduledoc """
   Gets a single [user](`#{User}`).
+
+  At least one filter is required.
   """
 
   filter :id, :binary_id
   filter :email, :string
   filter :name, :string
+
+  binding :user, User
 
   option :exists?, :boolean,
     default: false,
@@ -19,7 +23,7 @@ defmodule Example.Queries.GetUser do
 
   @impl true
   def handle_create(filters, _opts) do
-    query = from(u in User)
+    query = from(u in User, as: :user)
 
     Enum.reduce(filters, query, fn
       {:id, id}, query -> from q in query, where: q.id == ^id

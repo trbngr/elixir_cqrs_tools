@@ -23,10 +23,6 @@ defmodule ExampleApi.Error do
     Enum.map(errors, &handle/1)
   end
 
-  defp handle(%Cqrs.Command.CommandState{changeset: changeset}) do
-    handle(changeset)
-  end
-
   defp handle(%Ecto.Changeset{} = changeset) do
     changeset
     |> Ecto.Changeset.traverse_errors(fn {err, _opts} -> err end)

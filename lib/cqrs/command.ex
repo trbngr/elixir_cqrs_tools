@@ -213,6 +213,9 @@ defmodule Cqrs.Command do
         Ecto.Schema.field(:created_at, :utc_datetime)
 
         Enum.map(@schema_fields, fn
+          {name, :enum, opts} ->
+            Ecto.Schema.field(name, Ecto.Enum, opts)
+
           {name, :binary_id, opts} ->
             Ecto.Schema.field(name, Ecto.UUID, opts)
 
@@ -228,6 +231,7 @@ defmodule Cqrs.Command do
       @name __MODULE__ |> Module.split() |> Enum.reverse() |> hd() |> to_string()
 
       def __fields__, do: @schema_fields
+      def __required_fields__, do: @required_fields
       def __module_docs__, do: @moduledoc
       def __command__, do: __MODULE__
       def __name__, do: @name
@@ -278,8 +282,18 @@ defmodule Cqrs.Command do
 
   defmacro __dispatch__ do
     quote location: :keep do
-      def dispatch(command, opts \\ []) do
+      def dispatch(command, opts \\ [])
+
+      def dispatch(%__MODULE__{} = command, opts) do
         Command.__do_dispatch__(__MODULE__, command, get_opts(opts))
+      end
+
+      def dispatch({:ok, %__MODULE__{} = command}, opts) do
+        Command.__do_dispatch__(__MODULE__, command, get_opts(opts))
+      end
+
+      def dispatch({:error, errors}, _opts) do
+        {:error, {:invalid_command, errors}}
       end
 
       if @dispatcher do
@@ -403,7 +417,7 @@ defmodule Cqrs.Command do
   def __new__!(mod, attrs, required_fields, opts \\ []) when is_list(opts) do
     case __new__(mod, attrs, required_fields, opts) do
       {:ok, command} -> command
-      {:error, command} -> raise CommandError, command: command
+      {:error, errors} -> raise CommandError, errors: errors
     end
   end
 
@@ -419,17 +433,19 @@ defmodule Cqrs.Command do
   defp normalize(values) when is_struct(values), do: Map.from_struct(values)
   defp normalize(values) when is_map(values), do: values
 
-  def __do_dispatch__(_mod, {:error, changeset}, _opts) do
-    {:error, {:invalid_command, changeset}}
-  end
-
-  def __do_dispatch__(mod, {:ok, command}, opts) do
-    with {:ok, command} <- mod.before_dispatch(command, opts) do
+  def __do_dispatch__(mod, %{__struct__: mod} = command, opts) do
+    run_dispatch = fn command ->
       tag? = Keyword.get(opts, :tag?)
 
       command
       |> mod.handle_dispatch(opts)
       |> tag_result(tag?)
+    end
+
+    case mod.before_dispatch(command, opts) do
+      {:error, error} -> {:error, error}
+      {:ok, command} -> run_dispatch.(command)
+      %{__struct__: ^mod} -> run_dispatch.(command)
     end
   end
 
