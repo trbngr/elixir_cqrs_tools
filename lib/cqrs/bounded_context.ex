@@ -280,8 +280,6 @@ defmodule Cqrs.BoundedContext do
   end
 
   def __execute_query__!(module, attrs, opts) do
-    opts = Keyword.put(opts, :bang?, true)
-
     attrs
     |> module.new!(opts)
     |> module.execute!(opts)
