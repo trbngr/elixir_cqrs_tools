@@ -106,7 +106,10 @@ defmodule Cqrs.Query do
       @impl true
       def handle_validate(changeset, _opts), do: changeset
 
-      defoverridable handle_validate: 2
+      @impl true
+      def handle_execute!(query, opts), do: handle_execute(query, opts)
+
+      defoverridable handle_validate: 2, handle_execute!: 2
     end
   end
 
