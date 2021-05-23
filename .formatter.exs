@@ -13,6 +13,7 @@ locals_without_parens = [
   query: 2,
   derive_query: 2,
   derive_query: 3,
+  derive_event: 1,
   derive_event: 2,
   derive_connection: 3,
   derive_mutation_input: 1,
