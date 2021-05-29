@@ -96,7 +96,7 @@ if Code.ensure_loaded?(Absinthe) do
           Query.create_query(
             unquote(query_module),
             unquote(return_type),
-            Keyword.put_new(unquote(opts), :tag?, true)
+            Keyword.put_new(opts, :tag?, true)
           )
         end
 
@@ -157,7 +157,7 @@ if Code.ensure_loaded?(Absinthe) do
           Mutation.create_mutatation(
             unquote(command_module),
             unquote(return_type),
-            Keyword.put_new(unquote(opts), :tag?, true)
+            Keyword.put_new(opts, :tag?, true)
           )
         end
 
