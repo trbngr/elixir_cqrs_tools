@@ -1,0 +1,369 @@
+# Using cqrs_tools with Absinthe
+
+## Rationale
+
+A common pain point when writing APIs is the seemingly unnecessary duplication of code. This is true for GraphQL and REST APIs.
+
+I've seen countless requests of people wanting to code gen Absinthe objects from Ecto schemas and many other sources. Of course that's possible to do. But I feel that Ecto schemas, that are mapped to database tables, are the wrong candidates for code generation. You don't want to tie your APIs to implementation details. What you really want to expose is your domain layer's operations.
+
+Of course, with that realization, you still end up asking "How do I stop code duplication?".
+
+The macros in `cqrs_tools` define everything you need to expose your domain as GraphQL operations.
+
+The benefits of this is that you really only have to focus on your domain layer and it's rules. `cqrs_tools` can interpret those rules and Absinthe will inherit all of your work.
+
+If you're already familiar with cqrs_tools, you can skip down to the Absinthe specific section: `Absinthe Arrives`.
+
+## Setup
+
+### Install Dependencies, Create a Read Model and a Repo
+
+<!-- livebook:{"disable_formatting":true} -->
+
+```elixir
+# Turn off automatic jason encoder implementations for this demo
+Application.put_env(:cqrs_tools, :create_jason_encoders, false)
+Application.put_env(:cqrs_tools, :absinthe_relay, repo: Repo)
+
+Mix.install([
+  {:absinthe, "~> 1.6"},
+  {:absinthe_relay, "~> 1.5"},
+  {:cqrs_tools, "~> 0.3"},
+  {:ecto, "~> 3.6"},
+  {:etso, "~> 0.1.5"},
+  {:jason, "~> 1.2"},
+  {:elixir_uuid, "~> 1.6", override: true, hex: :uuid_utils}
+])
+```
+
+### Define a Read Model
+
+<!-- livebook:{"disable_formatting":true} -->
+
+```elixir
+defmodule User do
+  use Ecto.Schema
+  import Ecto.Changeset
+
+  @primary_key false
+  schema "users" do
+    field :id, :binary_id, primary_key: true
+    field :name, :string
+    field :email, :string
+  end
+
+  def changeset(user \\ %__MODULE__{}, attrs) do
+    user
+    |> cast(attrs, [:id, :name, :email])
+    |> validate_required([:id, :name, :email])
+  end
+end
+```
+
+### Define an Ecto Repo
+
+<!-- livebook:{"disable_formatting":true} -->
+
+```elixir
+defmodule Repo do
+  use Ecto.Repo, otp_app: :my_app, adapter: Etso.Adapter
+end
+
+Repo.start_link([])
+```
+
+### Define a Command
+
+<!-- livebook:{"disable_formatting":true} -->
+
+```elixir
+defmodule CreateUser do
+  use Cqrs.Command
+
+  field :name, :string
+  field :email, :string
+  field :id, :binary_id, internal: true
+
+  @impl true
+  def handle_validate(command, _opts) do
+    Ecto.Changeset.validate_format(command, :email, ~r/@/)
+  end
+
+  @impl true
+  def after_validate(%{email: email} = command) do
+    Map.put(command, :id, UUID.uuid5(:oid, email))
+  end
+
+  @impl true
+  def before_dispatch(%{email: email} = command, _opts) do
+    if Users.get_user(%{email: email}, exists?: true),
+      do: {:error, :user_exists},
+      else: {:ok, command}
+  end
+
+  @impl true
+  def handle_dispatch(command, _opts) do
+    command
+    |> Map.from_struct()
+    |> User.changeset()
+    |> Repo.insert!()
+  end
+end
+```
+
+### Define a Query
+
+<!-- livebook:{"disable_formatting":true} -->
+
+```elixir
+defmodule GetUser do
+  use Cqrs.Query
+
+  filter :id, :binary_id
+  filter :email, :string
+
+  option :exists?, :boolean, default: false
+
+  @impl true
+  def handle_create(filters, _opts) do
+    query = from(u in User)
+
+    Enum.reduce(filters, query, fn
+      {:id, id}, query -> from q in query, where: q.id == ^id
+      {:email, email}, query -> from q in query, where: q.email == ^email
+    end)
+  end
+
+  @impl true
+  def handle_execute(query, opts) do
+    if Keyword.fetch!(opts, :exists?),
+      do: Repo.exists?(query, opts),
+      else: Repo.one(query, opts)
+  end
+end
+```
+
+### Expose the query
+
+This another convenience macro. It is used by the `CreateUser` command is `before_dispatch`
+
+<!-- livebook:{"disable_formatting":true} -->
+
+```elixir
+defmodule Users do
+  use Cqrs.BoundedContext
+
+  query GetUser
+end
+```
+
+## Absinthe Arrives
+
+### Create Absinthe Schema
+
+Here instead of using `Absinthe.Schema.Notation`, we will use
+`Cqrs.Absinthe`. This will import the `derive_query`, `derive_mutation`,
+and `derive_mutation_input` macros.
+
+<!-- livebook:{"disable_formatting":true} -->
+
+```elixir
+defmodule UserTypes do
+  use Cqrs.Absinthe
+
+  object :user do
+    field :id, :id
+    field :name, :string
+    field :email, :string
+  end
+
+  object :user_mutations do
+    derive_mutation CreateUser, :user
+  end
+
+  object :user_queries do
+    derive_query GetUser, :user
+  end
+end
+
+defmodule Schema do
+  use Absinthe.Schema
+
+  import_types UserTypes
+
+  query do
+    import_fields :user_queries
+  end
+
+  mutation do
+    import_fields :user_mutations
+  end
+end
+```
+
+### Test the query.
+
+```elixir
+document = """
+query user($id: ID!){
+  getUser(id: $id){
+    id
+    name
+    email    
+  }
+}
+"""
+
+Absinthe.run(document, Schema, variables: %{"id" => "052c1984-74c9-522f-858f-f04f1d4cc786"})
+```
+
+First we need to create a user
+
+<!-- livebook:{"disable_formatting":true} -->
+
+```elixir
+document  = """
+mutation create_user($name: String!, $email: String!){
+  createUser(name: $name, email: $email){
+    id
+    name
+    email
+  }
+}
+"""
+
+Absinthe.run(document, Schema, variables: %{"name" => "chris", "email" => "chris@example.com"})
+
+```
+
+Now if you run the query again, the user will be returned.
+
+```elixir
+document = """
+query user($id: ID!){
+  getUser(id: $id){
+    id
+    name
+    email    
+  }
+}
+"""
+
+Absinthe.run(document, Schema, variables: %{"id" => "052c1984-74c9-522f-858f-f04f1d4cc786"})
+```
+
+### Use with Relay Style Pagination
+
+You can support relay style cursor pagination with the `derive_connection` macro
+
+The only prerequisites are that you have `:absinthe_relay` declared as a dependecy and you've defined the connection for the node type that you are returning.
+
+Let's define a new query and recompile our schema modules.
+
+<!-- livebook:{"disable_formatting":true} -->
+
+```elixir
+defmodule ListUsers do
+  use Cqrs.Query
+
+  filter :email, :string
+  filter :name, :string
+
+  @impl true
+  def handle_create(filters, _opts) do
+    query = from(u in User)
+
+    Enum.reduce(filters, query, fn
+      {:email, email}, query -> from(q in query, where: q.email == ^email)
+      {:name, name}, query -> from(q in query, where: q.name == ^name)
+    end)
+  end
+
+  @impl true
+  def handle_execute(query, opts), do: Repo.all(query, opts)
+end
+```
+
+<!-- livebook:{"disable_formatting":true} -->
+
+```elixir
+defmodule UserTypes do
+  use Cqrs.Absinthe
+  use Cqrs.Absinthe.Relay
+
+  object :user do
+    field :id, :id
+    field :name, :string
+    field :email, :string
+  end
+
+  connection(node_type: :user)
+
+  object :user_mutations do
+    derive_mutation CreateUser, :user
+  end
+
+  object :user_queries do
+    derive_query GetUser, :user
+
+    # We're setting repo here for illustration. Normally it would be configured in `config.exs`. See above in `Install Dependencies`
+    derive_connection ListUsers, :user, as: :users, repo: Repo
+  end
+end
+
+defmodule Schema do
+  use Absinthe.Schema
+  use Absinthe.Relay.Schema, :modern
+
+  import_types UserTypes
+
+  query do
+    import_fields :user_queries
+  end
+
+  mutation do
+    import_fields :user_mutations
+  end
+end
+```
+
+Go ahead and create a few users.
+
+```elixir
+document = """
+mutation create_user($name: String!, $email: String!){
+  createUser(name: $name, email: $email){
+    id
+    name
+    email
+  }
+}
+"""
+
+Absinthe.run(document, Schema, variables: %{"name" => "hailey", "email" => "hailey@example.com"})
+```
+
+The new `users` query is live and supports all the filters you defined!
+
+```elixir
+document = """
+query list_users($name: String, $email: String) {
+  users(first: 5, name: $name, email: $email) {
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+    edges {
+      node {
+        id
+        email
+        name
+      }
+    }
+  }
+}
+"""
+
+# Play around with the variables here.
+Absinthe.run(document, Schema, variables: %{"name" => nil, "email" => nil})
+```

@@ -24,3 +24,7 @@ cqrs_tools-*.tar
 
 .elixir_ls
 
+temp
+livebooks/*.md
+livebooks/*.org
+
