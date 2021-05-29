@@ -1,4 +1,5 @@
 defmodule Cqrs.Options do
+  @moduledoc false
   def tag_option do
     {:tag?, :boolean,
      [
