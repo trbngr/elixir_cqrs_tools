@@ -18,8 +18,16 @@ if Code.ensure_loaded?(Absinthe) do
       |> Enum.map(fn field ->
         {name, _type, field_opts} = field
         absinthe_type = absinthe_type(field, opts)
+
         required = Keyword.get(field_opts, :required, false)
-        {name, absinthe_type, required}
+        default_value = Keyword.get(field_opts, :default)
+
+        absinthe_opts =
+          field_opts
+          |> Keyword.take([:description, :deprecate, :name])
+          |> Keyword.put(:default_value, default_value)
+
+        {name, absinthe_type, required, absinthe_opts}
       end)
     end
 

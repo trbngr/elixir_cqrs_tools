@@ -98,6 +98,7 @@ defmodule Cqrs.Query do
       import Cqrs.Options, only: [option: 3]
       import Query, only: [filter: 2, filter: 3, binding: 2]
 
+      @desc nil
       @options Cqrs.Options.tag_option()
 
       @behaviour Query
@@ -235,7 +236,15 @@ defmodule Cqrs.Query do
       required = Keyword.get(unquote(opts), :required, @require_all_filters)
       if required, do: @required_filters(unquote(name))
 
-      @filters {unquote(name), unquote(type), Keyword.put(unquote(opts), :required, required)}
+      opts =
+        unquote(opts)
+        |> Keyword.put(:required, required)
+        |> Keyword.update(:description, @desc, &Function.identity/1)
+
+      # reset the @desc attr
+      @desc nil
+
+      @filters {unquote(name), unquote(type), opts}
     end
   end
 

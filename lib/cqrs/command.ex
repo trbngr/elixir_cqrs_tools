@@ -159,6 +159,7 @@ defmodule Cqrs.Command do
 
       @options Cqrs.Options.tag_option()
 
+      @desc nil
       @behaviour Command
       @before_compile Command
       @after_compile Command
@@ -351,7 +352,14 @@ defmodule Cqrs.Command do
             required
         end
 
-      opts = Keyword.put(unquote(opts), :required, required)
+      opts =
+        unquote(opts)
+        |> Keyword.put(:required, required)
+        |> Keyword.update(:description, @desc, &Function.identity/1)
+
+      # reset the @desc attr
+      @desc nil
+
       @schema_fields {unquote(name), unquote(type), opts}
     end
   end

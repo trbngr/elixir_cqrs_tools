@@ -5,8 +5,11 @@ defmodule Example.Users.Protocol.CreateUser do
   use Cqrs.Command, dispatcher: Example.App
 
   field :id, :binary_id, internal: true
+
   field :name, :string, description: "The user's name"
-  field :email, :string, description: "The user's email."
+
+  @desc "The user's email"
+  field :email, :string
 
   option :metadata, :map, default: %{}, description: "User metadata"
 

@@ -63,10 +63,10 @@ if Code.ensure_loaded?(Absinthe) do
     defp create_query_args(query_module, opts) do
       query_module.__filters__()
       |> Args.extract_args(opts)
-      |> Enum.map(fn {name, absinthe_type, required} ->
+      |> Enum.map(fn {name, absinthe_type, required, opts} ->
         case required do
-          true -> quote do: arg(unquote(name), non_null(unquote(absinthe_type)))
-          false -> quote do: arg(unquote(name), unquote(absinthe_type))
+          true -> quote do: arg(unquote(name), non_null(unquote(absinthe_type)), unquote(opts))
+          false -> quote do: arg(unquote(name), unquote(absinthe_type), unquote(opts))
         end
       end)
     end

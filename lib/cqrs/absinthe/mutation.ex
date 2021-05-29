@@ -17,10 +17,10 @@ if Code.ensure_loaded?(Absinthe) do
     defp create_input_object_fields(command_module, opts) do
       command_module.__fields__()
       |> Args.extract_args(opts)
-      |> Enum.map(fn {name, absinthe_type, required} ->
+      |> Enum.map(fn {name, absinthe_type, required, opts} ->
         case required do
-          true -> quote do: field(unquote(name), non_null(unquote(absinthe_type)))
-          false -> quote do: field(unquote(name), unquote(absinthe_type))
+          true -> quote do: field(unquote(name), non_null(unquote(absinthe_type)), unquote(opts))
+          false -> quote do: field(unquote(name), unquote(absinthe_type), unquote(opts))
         end
       end)
     end
@@ -59,10 +59,10 @@ if Code.ensure_loaded?(Absinthe) do
     defp create_mutatation_args(command_module, opts) do
       command_module.__fields__()
       |> Args.extract_args(opts)
-      |> Enum.map(fn {name, absinthe_type, required} ->
+      |> Enum.map(fn {name, absinthe_type, required, opts} ->
         case required do
-          true -> quote do: arg(unquote(name), non_null(unquote(absinthe_type)))
-          false -> quote do: arg(unquote(name), unquote(absinthe_type))
+          true -> quote do: arg(unquote(name), non_null(unquote(absinthe_type)), unquote(opts))
+          false -> quote do: arg(unquote(name), unquote(absinthe_type), unquote(opts))
         end
       end)
     end

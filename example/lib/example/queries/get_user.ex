@@ -8,9 +8,12 @@ defmodule Example.Queries.GetUser do
   At least one filter is required.
   """
 
+  @desc "The ID of the user"
   filter :id, :binary_id
   filter :email, :string
-  filter :name, :string
+
+  @desc "The name of the user."
+  filter :get_user_name, :string, deprecate: "this is a stupid filter. Don't expect to use it soon."
 
   binding :user, User
 
