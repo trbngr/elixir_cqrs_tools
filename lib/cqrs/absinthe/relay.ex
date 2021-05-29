@@ -78,7 +78,7 @@ if Code.ensure_loaded?(Absinthe.Relay) do
           Query.create_connection_query(
             unquote(query_module),
             unquote(return_type),
-            unquote(opts)
+            Keyword.put_new(unquote(opts), :tag?, true)
           )
         end
 
