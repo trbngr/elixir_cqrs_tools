@@ -56,7 +56,7 @@ if Code.ensure_loaded?(Absinthe) do
 
     """
     alias Cqrs.Guards
-    alias Cqrs.Absinthe.{Mutation, Query}
+    alias Cqrs.Absinthe.{Enum, Mutation, Query}
 
     defmacro __using__(_) do
       quote do
@@ -69,7 +69,8 @@ if Code.ensure_loaded?(Absinthe) do
             derive_mutation: 2,
             derive_mutation: 3,
             derive_query: 2,
-            derive_query: 3
+            derive_query: 3,
+            derive_enum: 3
           ]
       end
     end
@@ -162,6 +163,21 @@ if Code.ensure_loaded?(Absinthe) do
         end
 
       Module.eval_quoted(__CALLER__, mutation)
+    end
+
+    defmacro derive_enum(command_or_query_module, field_name, enum_name) do
+      enum =
+        quote location: :keep do
+          Guards.ensure_is_command_or_query!(unquote(command_or_query_module))
+
+          Enum.create_enum(
+            unquote(command_or_query_module),
+            unquote(field_name),
+            unquote(enum_name)
+          )
+        end
+
+      Module.eval_quoted(__CALLER__, enum)
     end
   end
 end

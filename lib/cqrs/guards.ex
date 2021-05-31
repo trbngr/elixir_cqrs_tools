@@ -1,6 +1,12 @@
 defmodule Cqrs.Guards do
   @moduledoc false
-  alias Cqrs.{InvalidCommandError, InvalidDispatcherError, InvalidQueryError, InvalidRouterError}
+  alias Cqrs.{
+    InvalidCommandError,
+    InvalidDispatcherError,
+    InvalidQueryError,
+    InvalidRouterError,
+    NotAQueryOrCommandError
+  }
 
   def ensure_is_struct!(module) do
     unless exports_function?(module, :__struct__, 0) do
@@ -17,6 +23,15 @@ defmodule Cqrs.Guards do
   def ensure_is_query!(module) do
     unless exports_function?(module, :__query__, 0) do
       raise InvalidQueryError, query: module
+    end
+  end
+
+  def ensure_is_command_or_query!(module) do
+    is_query? = exports_function?(module, :__query__, 0)
+    is_command? = exports_function?(module, :__command__, 0)
+
+    unless is_command? or is_query? do
+      raise NotAQueryOrCommandError, module: module
     end
   end
 
