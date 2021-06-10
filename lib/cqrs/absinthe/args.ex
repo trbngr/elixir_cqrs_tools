@@ -36,7 +36,7 @@ if Code.ensure_loaded?(Absinthe) do
       macro = Keyword.get(opts, :macro)
 
       map_type =
-        get_configured_type_mapping(:map) || get_named_arg_type_mapping(name, opts) ||
+        get_named_arg_type_mapping(name, opts) || get_configured_type_mapping(:map) ||
           raise Cqrs.Absinthe.MapTypeMappingError, source: source, macro: macro, type: name
 
       quote do: unquote(map_type)
