@@ -137,7 +137,7 @@ defmodule Cqrs.Command do
 
   This callback is required.
   """
-  @callback handle_dispatch(command(), keyword()) :: {:ok, any} | {:error, any()}
+  @callback handle_dispatch(command(), keyword()) :: any()
 
   defmacro __using__(opts \\ []) do
     require_all_fields = Keyword.get(opts, :require_all_fields, true)
