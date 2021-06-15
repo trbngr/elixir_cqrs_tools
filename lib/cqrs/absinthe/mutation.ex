@@ -1,7 +1,7 @@
 if Code.ensure_loaded?(Absinthe) do
   defmodule Cqrs.Absinthe.Mutation do
     @moduledoc false
-    alias Cqrs.{BoundedContext, Absinthe.Args, Absinthe.Metadata}
+    alias Cqrs.{BoundedContext, Absinthe.Args, Absinthe.Metadata, Absinthe.Errors}
 
     def create_input_object(command_module, opts) do
       function_name = BoundedContext.__function_name__(command_module, opts)
@@ -35,7 +35,11 @@ if Code.ensure_loaded?(Absinthe) do
 
           resolve(fn args, resolution ->
             attrs = Map.get(args, :input, args)
-            opts = Metadata.merge(resolution, unquote(opts))
+
+            opts =
+              resolution
+              |> Metadata.merge(unquote(opts))
+              |> Errors.attach_error_handler()
 
             BoundedContext.__dispatch_command__(unquote(command_module), attrs, opts)
           end)
