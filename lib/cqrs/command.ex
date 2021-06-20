@@ -184,7 +184,7 @@ defmodule Cqrs.Command do
       Command.__introspection__()
       Command.__constructor__()
       Command.__dispatch__()
-      Command.__events__()
+      Command.__create_events__(__ENV__, @events, @schema_fields)
 
       Module.delete_attribute(__MODULE__, :events)
       Module.delete_attribute(__MODULE__, :options)
@@ -306,24 +306,32 @@ defmodule Cqrs.Command do
     end
   end
 
-  defmacro __events__ do
-    quote location: :keep do
-      command_fields = Enum.map(@schema_fields, &elem(&1, 0))
+  def __create_events__(env, events, fields) do
+    command_fields = Enum.map(fields, &elem(&1, 0))
 
-      Enum.map(@events, fn {name, opts} ->
-        options =
-          Keyword.update(opts, :with, command_fields, fn fields ->
-            fields
-            |> List.wrap()
-            |> Kernel.++(command_fields)
-            |> Enum.uniq()
-          end)
+    create_event = fn {name, opts, {file, line}} ->
+      options =
+        Keyword.update(opts, :with, command_fields, fn fields ->
+          fields
+          |> List.wrap()
+          |> Kernel.++(command_fields)
+          |> Enum.uniq()
+        end)
 
-        defmodule name do
-          use DomainEvent, options
+      domain_event =
+        quote do
+          use DomainEvent, unquote(options)
         end
-      end)
+
+      env =
+        env
+        |> Map.put(:file, file)
+        |> Map.put(:line, line)
+
+      Module.create(name, domain_event, env)
     end
+
+    Enum.map(events, create_event)
   end
 
   @doc """
@@ -370,7 +378,7 @@ defmodule Cqrs.Command do
   Accepts all the options that [DomainEvent](`Cqrs.DomainEvent`) accepts.
   """
   defmacro derive_event(name, opts \\ []) do
-    quote location: :keep do
+    quote do
       [_command_name | namespace] =
         __MODULE__
         |> Module.split()
@@ -382,7 +390,7 @@ defmodule Cqrs.Command do
         |> Module.concat()
 
       name = Module.concat(namespace, unquote(name))
-      @events {name, unquote(opts)}
+      @events {name, unquote(opts), {__ENV__.file, __ENV__.line}}
     end
   end
 
