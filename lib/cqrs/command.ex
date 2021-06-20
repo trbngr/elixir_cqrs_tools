@@ -1,5 +1,5 @@
 defmodule Cqrs.Command do
-  alias Cqrs.{Command, CommandError, Documentation, DomainEvent, Guards}
+  alias Cqrs.{Command, CommandError, Documentation, DomainEvent, Guards, Options}
 
   @moduledoc """
   The `Command` macro allows you to define a command that encapsulates a struct definition,
@@ -17,7 +17,8 @@ defmodule Cqrs.Command do
 
         field :email, :string
         field :name, :string
-        field :id, :binary_id, internal: true
+
+        internal_field :id, :binary_id
 
         @impl true
         def handle_validate(command, _opts) do
@@ -154,8 +155,9 @@ defmodule Cqrs.Command do
       Module.register_attribute(__MODULE__, :required_fields, accumulate: true)
 
       require Cqrs.Options
-      import Cqrs.Options, only: [option: 3]
-      import Command, only: [field: 2, field: 3, derive_event: 1, derive_event: 2]
+
+      import Command,
+        only: [field: 2, field: 3, derive_event: 1, derive_event: 2, internal_field: 2, internal_field: 3, option: 3]
 
       @options Cqrs.Options.tag_option()
 
@@ -373,6 +375,33 @@ defmodule Cqrs.Command do
   end
 
   @doc """
+  The same as `field/3` but sets the option `internal` to `true`.
+
+  This helps with readability of commands with a large number of fields.
+  """
+  @spec internal_field(name :: atom(), type :: atom(), keyword()) :: any()
+  defmacro internal_field(name, type, opts \\ []) do
+    quote do
+      field(unquote(name), unquote(type), Keyword.put(unquote(opts), :internal, true))
+    end
+  end
+
+  @doc """
+  Describes a supported option for this command.
+
+  ## Options
+  * `:default` - this default value if the option is not provided.
+  * `:description` - The documentation for this option.
+  """
+
+  @spec option(name :: atom(), hint :: atom(), keyword()) :: any()
+  defmacro option(name, hint, opts) do
+    quote do
+      Options.option(unquote(name), unquote(hint), unquote(opts))
+    end
+  end
+
+  @doc """
   Generates an [event](`Cqrs.DomainEvent`) based on the fields defined in the [command](`Cqrs.Command`).
 
   Accepts all the options that [DomainEvent](`Cqrs.DomainEvent`) accepts.
@@ -438,7 +467,7 @@ defmodule Cqrs.Command do
     end
   end
 
-  def format_errors(changeset) do
+  defp format_errors(changeset) do
     Changeset.traverse_errors(changeset, fn {message, opts} ->
       Regex.replace(~r"%{(\w+)}", message, fn _, key ->
         opts |> Keyword.get(String.to_existing_atom(key), key) |> to_string()
