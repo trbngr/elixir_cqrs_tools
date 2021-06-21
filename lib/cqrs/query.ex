@@ -44,10 +44,10 @@ defmodule Cqrs.Query do
   ### Creation
 
       iex> GetUser.new!()
-      ** (Cqrs.QueryError) %{email: ["can't be blank"]}
+      ** (Cqrs.QueryError) email can't be blank
 
       iex> GetUser.new!(email: "wrong")
-      ** (Cqrs.QueryError) %{email: ["has invalid format"]}
+      ** (Cqrs.QueryError) email has invalid format
 
       iex> {:error, errors} = GetUser.new()
       ...> errors

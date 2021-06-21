@@ -34,7 +34,7 @@ defmodule Cqrs.BoundedContext do
   ### Queries
 
       iex> Users.get_user!(email: "wrong")
-      ** (Cqrs.QueryError) %{email: ["has invalid format"]}
+      ** (Cqrs.QueryError) email has invalid format
 
       iex> {:error, errors} = Users.get_user2(%{bad: "data"})
       ...> errors
