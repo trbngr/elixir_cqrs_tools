@@ -4,7 +4,7 @@ defmodule Cqrs.Options do
     {:tag?, :boolean,
      [
        default: false,
-       description: "If `true`, the result of the query will be tagged with an `:ok` or `:error` tuple."
+       description: "If `true`, the result will be tagged with an `:ok` or `:error` tuple."
      ]}
   end
 

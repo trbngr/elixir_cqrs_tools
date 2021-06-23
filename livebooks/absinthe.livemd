@@ -4,7 +4,7 @@
 
 A common pain point when writing APIs is the seemingly unnecessary duplication of code. This is true for GraphQL and REST APIs.
 
-I've seen countless requests of people wanting to code gen Absinthe objects from Ecto schemas and many other sources. Of course that's possible to do. But I feel that Ecto schemas, that are mapped to database tables, are the wrong candidates for code generation. You don't want to tie your APIs to implementation details. What you really want to expose is your domain layer's operations.
+I've seen countless requests of people wanting to code gen Absinthe objects from Ecto schemas and many other sources. Of course that's possible to do. But I feel that Ecto schemas, that are mapped to database tables, are the wrong candidates for code generation. You don't want to tie your APIs to implementation details. What you really want to expose are your domain layer's operations.
 
 Of course, with that realization, you still end up asking "How do I stop code duplication?".
 
@@ -365,5 +365,5 @@ query list_users($name: String, $email: String) {
 """
 
 # Play around with the variables here.
-Absinthe.run(document, Schema, variables: %{"name" => nil, "email" => nil})
+Absinthe.run(document, Schema, variables: %{"name" => "chris", "email" => nil})
 ```

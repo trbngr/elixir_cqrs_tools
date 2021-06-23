@@ -3,9 +3,10 @@ defmodule CreateUser do
 
   field :email, :string
   field :name, :string
-  field :id, :binary_id, internal: true
 
-  derive_event(UserCreated)
+  internal_field :id, :binary_id
+
+  derive_event UserCreated
 
   @impl true
   def handle_validate(command, _opts) do

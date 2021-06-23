@@ -44,10 +44,10 @@ defmodule Cqrs.Query do
   ### Creation
 
       iex> GetUser.new!()
-      ** (Cqrs.QueryError) %{email: ["can't be blank"]}
+      ** (Cqrs.QueryError) email can't be blank
 
       iex> GetUser.new!(email: "wrong")
-      ** (Cqrs.QueryError) %{email: ["has invalid format"]}
+      ** (Cqrs.QueryError) email has invalid format
 
       iex> {:error, errors} = GetUser.new()
       ...> errors
@@ -80,7 +80,7 @@ defmodule Cqrs.Query do
               {:ok, any()} | {:error, query()} | {:error, any()}
   @callback handle_execute!(Ecto.Query.t(), opts()) :: any()
 
-  alias Cqrs.{Documentation, Query, QueryError}
+  alias Cqrs.{Documentation, Query, QueryError, Options}
 
   defmacro __using__(opts \\ []) do
     require_all_filters = Keyword.get(opts, :require_all_filters, false)
@@ -95,8 +95,7 @@ defmodule Cqrs.Query do
       require Cqrs.Options
 
       import Ecto.Query
-      import Cqrs.Options, only: [option: 3]
-      import Query, only: [filter: 2, filter: 3, binding: 2]
+      import Query, only: [filter: 2, filter: 3, binding: 2, option: 3]
 
       @desc nil
       @options Cqrs.Options.tag_option()
@@ -248,6 +247,21 @@ defmodule Cqrs.Query do
     end
   end
 
+  @doc """
+  Describes a supported option for this query.
+
+  ## Options
+  * `:default` - this default value if the option is not provided.
+  * `:description` - The documentation for this option.
+  """
+
+  @spec option(name :: atom(), hint :: atom(), keyword()) :: any()
+  defmacro option(name, hint, opts) do
+    quote do
+      Options.option(unquote(name), unquote(hint), unquote(opts))
+    end
+  end
+
   defmacro binding(name, schema) do
     quote do
       @bindings {unquote(name), unquote(schema)}
@@ -292,7 +306,7 @@ defmodule Cqrs.Query do
     end
   end
 
-  def format_errors(changeset) do
+  defp format_errors(changeset) do
     Changeset.traverse_errors(changeset, fn {message, opts} ->
       Regex.replace(~r"%{(\w+)}", message, fn _, key ->
         opts |> Keyword.get(String.to_existing_atom(key), key) |> to_string()

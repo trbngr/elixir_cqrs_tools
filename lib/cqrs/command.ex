@@ -1,5 +1,5 @@
 defmodule Cqrs.Command do
-  alias Cqrs.{Command, CommandError, Documentation, DomainEvent, Guards}
+  alias Cqrs.{Command, CommandError, Documentation, DomainEvent, Guards, Options}
 
   @moduledoc """
   The `Command` macro allows you to define a command that encapsulates a struct definition,
@@ -17,7 +17,8 @@ defmodule Cqrs.Command do
 
         field :email, :string
         field :name, :string
-        field :id, :binary_id, internal: true
+
+        internal_field :id, :binary_id
 
         @impl true
         def handle_validate(command, _opts) do
@@ -137,7 +138,7 @@ defmodule Cqrs.Command do
 
   This callback is required.
   """
-  @callback handle_dispatch(command(), keyword()) :: {:ok, any} | {:error, any()}
+  @callback handle_dispatch(command(), keyword()) :: any()
 
   defmacro __using__(opts \\ []) do
     require_all_fields = Keyword.get(opts, :require_all_fields, true)
@@ -154,8 +155,9 @@ defmodule Cqrs.Command do
       Module.register_attribute(__MODULE__, :required_fields, accumulate: true)
 
       require Cqrs.Options
-      import Cqrs.Options, only: [option: 3]
-      import Command, only: [field: 2, field: 3, derive_event: 1, derive_event: 2]
+
+      import Command,
+        only: [field: 2, field: 3, derive_event: 1, derive_event: 2, internal_field: 2, internal_field: 3, option: 3]
 
       @options Cqrs.Options.tag_option()
 
@@ -184,7 +186,7 @@ defmodule Cqrs.Command do
       Command.__introspection__()
       Command.__constructor__()
       Command.__dispatch__()
-      Command.__events__()
+      Command.__create_events__(__ENV__, @events, @schema_fields)
 
       Module.delete_attribute(__MODULE__, :events)
       Module.delete_attribute(__MODULE__, :options)
@@ -306,24 +308,32 @@ defmodule Cqrs.Command do
     end
   end
 
-  defmacro __events__ do
-    quote location: :keep do
-      command_fields = Enum.map(@schema_fields, &elem(&1, 0))
+  def __create_events__(env, events, fields) do
+    command_fields = Enum.map(fields, &elem(&1, 0))
 
-      Enum.map(@events, fn {name, opts} ->
-        options =
-          Keyword.update(opts, :with, command_fields, fn fields ->
-            fields
-            |> List.wrap()
-            |> Kernel.++(command_fields)
-            |> Enum.uniq()
-          end)
+    create_event = fn {name, opts, {file, line}} ->
+      options =
+        Keyword.update(opts, :with, command_fields, fn fields ->
+          fields
+          |> List.wrap()
+          |> Kernel.++(command_fields)
+          |> Enum.uniq()
+        end)
 
-        defmodule name do
-          use DomainEvent, options
+      domain_event =
+        quote do
+          use DomainEvent, unquote(options)
         end
-      end)
+
+      env =
+        env
+        |> Map.put(:file, file)
+        |> Map.put(:line, line)
+
+      Module.create(name, domain_event, env)
     end
+
+    Enum.map(events, create_event)
   end
 
   @doc """
@@ -365,12 +375,39 @@ defmodule Cqrs.Command do
   end
 
   @doc """
+  The same as `field/3` but sets the option `internal` to `true`.
+
+  This helps with readability of commands with a large number of fields.
+  """
+  @spec internal_field(name :: atom(), type :: atom(), keyword()) :: any()
+  defmacro internal_field(name, type, opts \\ []) do
+    quote do
+      field(unquote(name), unquote(type), Keyword.put(unquote(opts), :internal, true))
+    end
+  end
+
+  @doc """
+  Describes a supported option for this command.
+
+  ## Options
+  * `:default` - this default value if the option is not provided.
+  * `:description` - The documentation for this option.
+  """
+
+  @spec option(name :: atom(), hint :: atom(), keyword()) :: any()
+  defmacro option(name, hint, opts) do
+    quote do
+      Options.option(unquote(name), unquote(hint), unquote(opts))
+    end
+  end
+
+  @doc """
   Generates an [event](`Cqrs.DomainEvent`) based on the fields defined in the [command](`Cqrs.Command`).
 
   Accepts all the options that [DomainEvent](`Cqrs.DomainEvent`) accepts.
   """
   defmacro derive_event(name, opts \\ []) do
-    quote location: :keep do
+    quote do
       [_command_name | namespace] =
         __MODULE__
         |> Module.split()
@@ -382,7 +419,7 @@ defmodule Cqrs.Command do
         |> Module.concat()
 
       name = Module.concat(namespace, unquote(name))
-      @events {name, unquote(opts)}
+      @events {name, unquote(opts), {__ENV__.file, __ENV__.line}}
     end
   end
 
@@ -430,7 +467,7 @@ defmodule Cqrs.Command do
     end
   end
 
-  def format_errors(changeset) do
+  defp format_errors(changeset) do
     Changeset.traverse_errors(changeset, fn {message, opts} ->
       Regex.replace(~r"%{(\w+)}", message, fn _, key ->
         opts |> Keyword.get(String.to_existing_atom(key), key) |> to_string()
