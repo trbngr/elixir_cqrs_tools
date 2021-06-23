@@ -4,8 +4,7 @@ defmodule Cqrs.Guards do
     InvalidCommandError,
     InvalidDispatcherError,
     InvalidQueryError,
-    InvalidRouterError,
-    NotAQueryOrCommandError
+    InvalidRouterError
   }
 
   def ensure_is_struct!(module) do
@@ -26,15 +25,6 @@ defmodule Cqrs.Guards do
     end
   end
 
-  def ensure_is_command_or_query!(module) do
-    is_query? = exports_function?(module, :__query__, 0)
-    is_command? = exports_function?(module, :__command__, 0)
-
-    unless is_command? or is_query? do
-      raise NotAQueryOrCommandError, module: module
-    end
-  end
-
   def ensure_is_commanded_router!(module) do
     unless exports_function?(module, :__registered_commands__, 0) do
       raise InvalidRouterError, router: module
@@ -47,7 +37,7 @@ defmodule Cqrs.Guards do
     end
   end
 
-  defp exports_function?(module, fun, arity) do
+  def exports_function?(module, fun, arity) do
     case Code.ensure_compiled(module) do
       {:module, _} -> function_exported?(module, fun, arity)
       _ -> false

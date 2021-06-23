@@ -1,29 +1,29 @@
-defmodule Cqrs.Absinthe.Enum do
-  alias Cqrs.Absinthe.InvalidEnumError
+if Code.ensure_loaded?(Absinthe) do
+  defmodule Cqrs.Absinthe.Enum do
+    alias Cqrs.Absinthe.InvalidEnumError
 
-  def create_enum(command_or_query_module, field_name, enum_name) do
-    values =
-      case find_enum(command_or_query_module, field_name) do
-        nil -> raise InvalidEnumError, module: command_or_query_module, field: field_name
-        values -> Enum.map(values, fn enum_value -> quote do: value(unquote(enum_value)) end)
-      end
+    def create_enum(enum_name, source_module, field_name) do
+      values =
+        case find_enum_values(source_module, field_name) do
+          nil ->
+            raise InvalidEnumError, module: source_module, field: field_name
 
-    quote do
-      enum unquote(enum_name) do
-        (unquote_splicing(values))
+          values ->
+            Enum.map(values, fn enum_value -> quote do: value(unquote(enum_value)) end)
+        end
+
+      quote do
+        enum unquote(enum_name) do
+          (unquote_splicing(values))
+        end
       end
     end
-  end
 
-  defp find_enum(module, field_name) do
-    fields =
-      if function_exported?(module, :__command__, 0),
-        do: module.__fields__(),
-        else: module.__filters__()
-
-    case Enum.find(fields, &match?({^field_name, :enum, _opts}, &1)) do
-      nil -> nil
-      {_name, _enum, opts} -> Keyword.get(opts, :values)
+    defp find_enum_values(module, field_name) do
+      case module.__schema__(:type, field_name) do
+        {:parameterized, Ecto.Enum, opts} -> Map.get(opts, :values)
+        _ -> nil
+      end
     end
   end
 end

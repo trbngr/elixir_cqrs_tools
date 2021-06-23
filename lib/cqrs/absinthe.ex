@@ -165,19 +165,25 @@ if Code.ensure_loaded?(Absinthe) do
       Module.eval_quoted(__CALLER__, mutation)
     end
 
-    defmacro derive_enum(command_or_query_module, field_name, enum_name) do
+    defmacro derive_enum(enum_name, source_module, field_name) do
       enum =
         quote location: :keep do
-          Guards.ensure_is_command_or_query!(unquote(command_or_query_module))
+          Cqrs.Absinthe.ensure_is_schema!(unquote(source_module))
 
           Enum.create_enum(
-            unquote(command_or_query_module),
-            unquote(field_name),
-            unquote(enum_name)
+            unquote(enum_name),
+            unquote(source_module),
+            unquote(field_name)
           )
         end
 
       Module.eval_quoted(__CALLER__, enum)
+    end
+
+    def ensure_is_schema!(module) do
+      unless Guards.exports_function?(module, :__schema__, 2) do
+        raise Cqrs.Absinthe.InvalidEnumSourceError, module: module
+      end
     end
   end
 end

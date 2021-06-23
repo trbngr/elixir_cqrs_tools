@@ -19,12 +19,13 @@ locals_without_parens = [
   derive_mutation_input: 1,
   derive_mutation_input: 2,
   derive_mutation: 2,
-  derive_mutation: 3
+  derive_mutation: 3,
+  derive_enum: 3
 ]
 
 [
   locals_without_parens: locals_without_parens,
-  import_deps: [:ecto],
+  import_deps: [:ecto, :absinthe],
   line_length: 120,
   export: [
     locals_without_parens: locals_without_parens

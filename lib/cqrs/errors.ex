@@ -12,13 +12,6 @@ defmodule Cqrs.InvalidQueryError do
     do: "#{module |> Module.split() |> Enum.join(".")} is not a Cqrs.Query"
 end
 
-defmodule Cqrs.NotAQueryOrCommandError do
-  defexception [:module]
-
-  def message(%{module: module}),
-    do: "#{module |> Module.split() |> Enum.join(".")} is not a Cqrs.Query or a Cqrs.Command"
-end
-
 defmodule Cqrs.InvalidRouterError do
   defexception [:router]
 

@@ -1,7 +1,7 @@
 defmodule CqrsTools.MixProject do
   use Mix.Project
 
-  @version "0.3.6"
+  @version "0.3.12"
 
   def project do
     [
