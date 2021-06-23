@@ -50,7 +50,9 @@ if Code.ensure_loaded?(Absinthe) do
       #{IO.ANSI.format([:blue, example])}
       """
     end
+  end
 
+  defmodule Cqrs.Absinthe.Errors do
     @moduledoc false
     def attach_error_handler(opts) do
       {provided_then, opts} = Keyword.pop(opts, :then, &Function.identity/1)

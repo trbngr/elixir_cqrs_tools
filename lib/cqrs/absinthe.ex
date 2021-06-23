@@ -23,10 +23,7 @@ if Code.ensure_loaded?(Absinthe) do
 
           import ExampleApi.Resolvers.UserResolver
 
-          enum :user_status do
-            value :active
-            value :suspended
-          end
+          derive_enum :user_status, ListUsers, :status
 
           object :user do
             field :id, :id
@@ -165,14 +162,17 @@ if Code.ensure_loaded?(Absinthe) do
       Module.eval_quoted(__CALLER__, mutation)
     end
 
-    defmacro derive_enum(enum_name, source_module, field_name) do
+    @doc """
+    Defines an [Absinthe Enum](`Absinthe.Type.Enum`) from a [Command](`Cqrs.Command`), [Domain Event](`Cqrs.DomainEvent`), or [Ecto Schema](`Ecto.Schema`).
+    """
+    defmacro derive_enum(enum_name, enum_source_module, field_name) do
       enum =
         quote location: :keep do
-          Cqrs.Absinthe.ensure_is_schema!(unquote(source_module))
+          Cqrs.Absinthe.ensure_is_schema!(unquote(enum_source_module))
 
           Enum.create_enum(
             unquote(enum_name),
-            unquote(source_module),
+            unquote(enum_source_module),
             unquote(field_name)
           )
         end
