@@ -22,6 +22,7 @@ if Code.ensure_loaded?(Absinthe) do
     defp find_enum_values(module, field_name) do
       case module.__schema__(:type, field_name) do
         {:parameterized, Ecto.Enum, opts} -> Map.get(opts, :values)
+        {:array, {:parameterized, Ecto.Enum, opts}} -> Map.get(opts, :values)
         _ -> nil
       end
     end
