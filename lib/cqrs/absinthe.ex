@@ -23,10 +23,7 @@ if Code.ensure_loaded?(Absinthe) do
 
           import ExampleApi.Resolvers.UserResolver
 
-          enum :user_status do
-            value :active
-            value :suspended
-          end
+          derive_enum :user_status, ListUsers, :status
 
           object :user do
             field :id, :id
@@ -56,7 +53,7 @@ if Code.ensure_loaded?(Absinthe) do
 
     """
     alias Cqrs.Guards
-    alias Cqrs.Absinthe.{Mutation, Query}
+    alias Cqrs.Absinthe.{Enum, Mutation, Query}
 
     defmacro __using__(_) do
       quote do
@@ -69,7 +66,8 @@ if Code.ensure_loaded?(Absinthe) do
             derive_mutation: 2,
             derive_mutation: 3,
             derive_query: 2,
-            derive_query: 3
+            derive_query: 3,
+            derive_enum: 3
           ]
       end
     end
@@ -162,6 +160,30 @@ if Code.ensure_loaded?(Absinthe) do
         end
 
       Module.eval_quoted(__CALLER__, mutation)
+    end
+
+    @doc """
+    Defines an [Absinthe Enum](`Absinthe.Type.Enum`) from a [Command](`Cqrs.Command`), [Domain Event](`Cqrs.DomainEvent`), or [Ecto Schema](`Ecto.Schema`).
+    """
+    defmacro derive_enum(enum_name, enum_source_module, field_name) do
+      enum =
+        quote location: :keep do
+          Cqrs.Absinthe.ensure_is_schema!(unquote(enum_source_module))
+
+          Enum.create_enum(
+            unquote(enum_name),
+            unquote(enum_source_module),
+            unquote(field_name)
+          )
+        end
+
+      Module.eval_quoted(__CALLER__, enum)
+    end
+
+    def ensure_is_schema!(module) do
+      unless Guards.exports_function?(module, :__schema__, 2) do
+        raise Cqrs.Absinthe.InvalidEnumSourceError, module: module
+      end
     end
   end
 end

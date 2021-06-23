@@ -8,10 +8,7 @@ defmodule ExampleApi.Types.UserTypes do
 
   import ExampleApi.Resolvers.UserResolver
 
-  enum :user_status do
-    value :active
-    value :suspended
-  end
+  derive_enum :user_status, ListUsers, :status
 
   object :user do
     field :id, :id
