@@ -6,8 +6,7 @@ defmodule Cqrs.DomainEvent do
 
   * `:from` _optional_ - a struct to derive fields from.
   * `:with` _optional_ - a list of `atom` field names to add.
-  * `:drop` _optional_ - a list of `atom` field names to remove from any field derived
-  from the struct in the `:from` option.
+  * `:drop` _optional_ - a list of `atom` field names to remove from any field derived from the struct in the `:from` option.
   * `:version` _optional_ - a version value. Defaults to `1`
 
   ## Example
@@ -49,6 +48,7 @@ defmodule Cqrs.DomainEvent do
       defstruct (inherited_keys ++ explicit_keys)
                 |> Enum.reject(&Enum.member?(keys_to_drop, &1))
                 |> List.delete(:created_at)
+                |> Enum.uniq()
                 |> Kernel.++([:created_at, {:version, version}])
 
       def new(source \\ [], attrs \\ []) do
