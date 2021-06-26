@@ -78,7 +78,7 @@ defmodule Cqrs.DomainEvent do
       source
       |> normalize()
       |> Map.merge(normalize(attrs))
-      |> Map.put(:created_at, DateTime.utc_now())
+      |> Map.put(:created_at, Cqrs.Clock.utc_now())
 
     struct(module, fields)
   end

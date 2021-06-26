@@ -437,7 +437,7 @@ defmodule Cqrs.Command do
   def __new__(mod, attrs, required_fields, opts) when is_list(opts) do
     mod
     |> __init__(attrs, required_fields, opts)
-    |> Changeset.put_change(:created_at, DateTime.utc_now())
+    |> Changeset.put_change(:created_at, Cqrs.Clock.utc_now())
     |> case do
       %{valid?: false} = changeset ->
         {:error, changeset}
