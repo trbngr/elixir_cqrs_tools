@@ -1,4 +1,4 @@
 defmodule Cqrs.Clock.SystemClock do
   @behaviour Cqrs.Clock
-  def utc_now(calendar), do: DateTime.utc_now(calendar)
+  def utc_now(_message), do: DateTime.utc_now()
 end
