@@ -118,7 +118,7 @@ defmodule Cqrs.BoundedContext do
       #{unquote(command_module).__module_docs__()}
       """
       def unquote(function_name)(attrs, opts) do
-        opts = Keyword.merge(unquote(opts), opts)
+        opts = Keyword.merge(unquote(opts), Cqrs.Options.normalize(opts))
         BoundedContext.__dispatch_command__(unquote(command_module), attrs, opts)
       end
 
@@ -126,7 +126,7 @@ defmodule Cqrs.BoundedContext do
       #{unquote(command_module).__module_docs__()}
       """
       def unquote(:"#{function_name}!")(attrs, opts) do
-        opts = Keyword.merge(unquote(opts), opts)
+        opts = Keyword.merge(unquote(opts), Cqrs.Options.normalize(opts))
         BoundedContext.__dispatch_command__!(unquote(command_module), attrs, opts)
       end
     end
@@ -202,7 +202,7 @@ defmodule Cqrs.BoundedContext do
       #{unquote(query_module).__module_docs__()}
       """
       def unquote(function_name)(filters, opts) do
-        opts = Keyword.merge(unquote(opts), opts)
+        opts = Keyword.merge(unquote(opts), Cqrs.Options.normalize(opts))
         BoundedContext.__execute_query__(unquote(query_module), filters, opts)
       end
 
@@ -210,7 +210,7 @@ defmodule Cqrs.BoundedContext do
       #{unquote(query_module).__module_docs__()}
       """
       def unquote(:"#{function_name}!")(filters, opts) do
-        opts = Keyword.merge(unquote(opts), opts)
+        opts = Keyword.merge(unquote(opts), Cqrs.Options.normalize(opts))
         BoundedContext.__execute_query__!(unquote(query_module), filters, opts)
       end
 

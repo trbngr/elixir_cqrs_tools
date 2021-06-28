@@ -260,7 +260,10 @@ defmodule Cqrs.Command do
   defmacro __constructor__ do
     quote generated: true, location: :keep do
       @default_opts Cqrs.Options.defaults()
-      defp get_opts(opts), do: Keyword.merge(@default_opts, opts)
+
+      defp get_opts(opts) do
+        Keyword.merge(@default_opts, Cqrs.Options.normalize(opts))
+      end
 
       # @spec new(maybe_improper_list() | map(), maybe_improper_list()) :: struct()
       # @spec new!(maybe_improper_list() | map(), maybe_improper_list()) :: %__MODULE__{}

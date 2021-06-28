@@ -40,4 +40,7 @@ defmodule Cqrs.Options do
       @options {unquote(name), unquote(hint), opts}
     end
   end
+
+  def normalize(%{} = options), do: Map.to_list(options)
+  def normalize(options) when is_list(options), do: options
 end
