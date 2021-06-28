@@ -45,3 +45,11 @@ defmodule Cqrs.CommandError do
     |> Enum.join("\n")
   end
 end
+
+defmodule Cqrs.InvalidValuesError do
+  defexception [:module]
+
+  def message(%{module: module}) do
+    "Values passed to #{inspect(module)} must be either a keyword list, a map, or a struct"
+  end
+end

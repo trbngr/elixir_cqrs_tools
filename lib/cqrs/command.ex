@@ -1,5 +1,5 @@
 defmodule Cqrs.Command do
-  alias Cqrs.{Command, CommandError, Documentation, DomainEvent, Guards, Options}
+  alias Cqrs.{Command, CommandError, Documentation, DomainEvent, Guards, Options, InvalidValuesError}
 
   @moduledoc """
   The `Command` macro allows you to define a command that encapsulates a struct definition,
@@ -428,8 +428,10 @@ defmodule Cqrs.Command do
   def __init__(mod, attrs, required_fields, opts) do
     fields = mod.__schema__(:fields)
 
+    attrs = normalize(mod, attrs)
+
     struct(mod)
-    |> Changeset.cast(normalize(attrs), fields)
+    |> Changeset.cast(attrs, fields)
     |> Changeset.validate_required(required_fields)
     |> mod.handle_validate(opts)
   end
@@ -475,9 +477,10 @@ defmodule Cqrs.Command do
     end)
   end
 
-  defp normalize(values) when is_list(values), do: Enum.into(values, %{})
-  defp normalize(values) when is_struct(values), do: Map.from_struct(values)
-  defp normalize(values) when is_map(values), do: values
+  defp normalize(_mod, values) when is_list(values), do: Enum.into(values, %{})
+  defp normalize(_mod, values) when is_struct(values), do: Map.from_struct(values)
+  defp normalize(_mod, values) when is_map(values), do: values
+  defp normalize(mod, _other), do: raise(InvalidValuesError, module: mod)
 
   def __do_dispatch__(mod, %{__struct__: mod} = command, opts) do
     run_dispatch = fn command ->

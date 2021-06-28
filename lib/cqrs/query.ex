@@ -80,7 +80,7 @@ defmodule Cqrs.Query do
               {:ok, any()} | {:error, query()} | {:error, any()}
   @callback handle_execute!(Ecto.Query.t(), opts()) :: any()
 
-  alias Cqrs.{Documentation, Query, QueryError, Options}
+  alias Cqrs.{Documentation, Query, QueryError, Options, InvalidValuesError}
 
   defmacro __using__(opts \\ []) do
     require_all_filters = Keyword.get(opts, :require_all_filters, false)
@@ -271,9 +271,11 @@ defmodule Cqrs.Query do
   def __new__(mod, filters, required_filters, opts) when is_list(opts) do
     fields = mod.__schema__(:fields)
 
+    filters = normalize(mod, filters)
+
     filters =
       struct(mod)
-      |> Changeset.cast(normalize(filters), fields)
+      |> Changeset.cast(filters, fields)
       |> Changeset.validate_required(required_filters)
       |> mod.handle_validate(opts)
       |> Changeset.apply_action(:create)
@@ -314,9 +316,10 @@ defmodule Cqrs.Query do
     end)
   end
 
-  defp normalize(values) when is_list(values), do: Enum.into(values, %{})
-  defp normalize(values) when is_struct(values), do: Map.from_struct(values)
-  defp normalize(values) when is_map(values), do: values
+  defp normalize(_mod, values) when is_list(values), do: Enum.into(values, %{})
+  defp normalize(_mod, values) when is_struct(values), do: Map.from_struct(values)
+  defp normalize(_mod, values) when is_map(values), do: values
+  defp normalize(mod, _other), do: raise(InvalidValuesError, module: mod)
 
   @doc false
   def execute(mod, {:ok, query}, opts), do: do_execute(mod, :handle_execute, query, opts)
