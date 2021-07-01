@@ -76,8 +76,7 @@ defmodule Cqrs.Query do
 
   @callback handle_create(filters(), opts()) :: query()
   @callback handle_validate(Changeset.t(), opts()) :: Changeset.t()
-  @callback handle_execute(Ecto.Query.t(), opts()) ::
-              {:ok, any()} | {:error, query()} | {:error, any()}
+  @callback handle_execute(Ecto.Query.t(), opts()) :: {:error, query()} | {:error, any()} | any()
   @callback handle_execute!(Ecto.Query.t(), opts()) :: any()
 
   alias Cqrs.{Documentation, Query, QueryError, Options, InvalidValuesError}
