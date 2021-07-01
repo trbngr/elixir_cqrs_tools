@@ -326,12 +326,12 @@ defmodule Cqrs.Query do
   @doc false
   def execute(mod, {:ok, query}, opts), do: do_execute(mod, :handle_execute, query, opts)
   def execute(_mod, {:error, query}, _opts), do: {:error, query}
-  def execute(mod, %Ecto.Query{} = query, opts), do: do_execute(mod, :handle_execute, query, opts)
+  def execute(mod, query, opts), do: do_execute(mod, :handle_execute, query, opts)
 
   @doc false
   def execute!(mod, {:ok, query}, opts), do: do_execute(mod, :handle_execute!, query, opts)
   def execute!(_mod, {:error, query}, _opts), do: {:error, query}
-  def execute!(mod, %Ecto.Query{} = query, opts), do: do_execute(mod, :handle_execute!, query, opts)
+  def execute!(mod, query, opts), do: do_execute(mod, :handle_execute!, query, opts)
 
   defp do_execute(mod, execute_fun, query, opts) do
     tag? = Keyword.get(opts, :tag?)
