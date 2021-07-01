@@ -71,7 +71,7 @@ defmodule Cqrs.Query do
   """
 
   @type opts :: keyword()
-  @type query :: Ecto.Query.t()
+  @type query :: any()
   @type filters :: keyword()
 
   @callback handle_create(filters(), opts()) :: query()
