@@ -76,8 +76,8 @@ defmodule Cqrs.Query do
 
   @callback handle_create(filters(), opts()) :: query()
   @callback handle_validate(Changeset.t(), opts()) :: Changeset.t()
-  @callback handle_execute(Ecto.Query.t(), opts()) :: {:error, query()} | {:error, any()} | any()
-  @callback handle_execute!(Ecto.Query.t(), opts()) :: any()
+  @callback handle_execute(query(), opts()) :: {:error, query()} | {:error, any()} | any()
+  @callback handle_execute!(query(), opts()) :: any()
 
   alias Cqrs.{Documentation, Query, QueryError, Options, InvalidValuesError}
 
@@ -187,8 +187,8 @@ defmodule Cqrs.Query do
         Keyword.merge(@default_opts, Cqrs.Options.normalize(opts))
       end
 
-      @spec new(Query.filters(), keyword()) :: {:ok, Ecto.Query.t()} | {:error, any()}
-      @spec new!(Query.filters(), keyword()) :: Ecto.Query.t()
+      @spec new(Query.filters(), keyword()) :: {:ok, Query.query()} | {:error, any()}
+      @spec new!(Query.filters(), keyword()) :: Query.query()
 
       require Documentation
 
