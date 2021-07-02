@@ -46,7 +46,7 @@ defmodule Cqrs.DomainEvent do
       if unquote(create_jason_encoders) and Code.ensure_loaded?(Jason), do: @derive(Jason.Encoder)
 
       defstruct (inherited_keys ++ explicit_keys)
-                |> Enum.reject(&Enum.member?(keys_to_drop, &1))
+                |> DomainEvent.drop_keys(keys_to_drop)
                 |> List.delete(:created_at)
                 |> Enum.uniq()
                 |> Kernel.++([:created_at, {:version, version}])
@@ -55,6 +55,14 @@ defmodule Cqrs.DomainEvent do
         DomainEvent.new(__MODULE__, source, attrs)
       end
     end
+  end
+
+  @doc false
+  def drop_keys(keys, keys_to_drop) do
+    Enum.reject(keys, fn
+      {name, _default_value} -> Enum.member?(keys_to_drop, name)
+      name -> Enum.member?(keys_to_drop, name)
+    end)
   end
 
   @doc false
