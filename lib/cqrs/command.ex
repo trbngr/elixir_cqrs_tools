@@ -7,8 +7,9 @@ defmodule Cqrs.Command do
 
   ## Options
 
-  * `require_all_fields` - If `true`, all fields will be required. Defaults to `true`
-  * `dispatcher` - A module that defines a `dispatch/2`.
+  * `require_all_fields` (:boolean) - If `true`, all fields will be required. Defaults to `true`
+  * `dispatcher` (:atom) - A module that defines a `dispatch/2`.
+  * `default_event_values` (:boolean) - If `true`, events created using `derive_event/1` or `derive_event/2`, will inherit default values from their command fields. Defaults to `true`.
 
   ## Examples
 
@@ -143,9 +144,11 @@ defmodule Cqrs.Command do
   defmacro __using__(opts \\ []) do
     require_all_fields = Keyword.get(opts, :require_all_fields, true)
     create_jason_encoders = Application.get_env(:cqrs_tools, :create_jason_encoders, true)
+    default_event_values = Keyword.get(opts, :default_event_values, true)
 
     quote location: :keep do
       Module.put_attribute(__MODULE__, :require_all_fields, unquote(require_all_fields))
+      Module.put_attribute(__MODULE__, :default_event_values, unquote(default_event_values))
       Module.put_attribute(__MODULE__, :dispatcher, Keyword.get(unquote(opts), :dispatcher))
       Module.put_attribute(__MODULE__, :create_jason_encoders, unquote(create_jason_encoders))
 
@@ -186,7 +189,7 @@ defmodule Cqrs.Command do
       Command.__introspection__()
       Command.__constructor__()
       Command.__dispatch__()
-      Command.__create_events__(__ENV__, @events, @schema_fields)
+      Command.__create_events__(__ENV__, @events, @schema_fields, @default_event_values)
 
       Module.delete_attribute(__MODULE__, :events)
       Module.delete_attribute(__MODULE__, :options)
@@ -195,6 +198,7 @@ defmodule Cqrs.Command do
       Module.delete_attribute(__MODULE__, :schema_fields)
       Module.delete_attribute(__MODULE__, :required_fields)
       Module.delete_attribute(__MODULE__, :require_all_fields)
+      Module.delete_attribute(__MODULE__, :default_event_values)
       Module.delete_attribute(__MODULE__, :create_jason_encoders)
     end
   end
@@ -311,8 +315,14 @@ defmodule Cqrs.Command do
     end
   end
 
-  def __create_events__(env, events, fields) do
-    command_fields = Enum.map(fields, &elem(&1, 0))
+  def __create_events__(env, events, fields, default_event_values) do
+    command_fields =
+      Enum.map(fields, fn {name, _type, opts} ->
+        case default_event_values do
+          true -> {name, Keyword.get(opts, :default)}
+          false -> name
+        end
+      end)
 
     create_event = fn {name, opts, {file, line}} ->
       options =
