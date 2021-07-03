@@ -10,9 +10,9 @@ end
 
 defmodule UsersEnhanced do
   use Cqrs.BoundedContext
-  use Cqrs.BoundedContext.Commanded
 
-  import_commands(CommandedRouter)
+  command CreateUser
+  command DeactivateUser
 
   query GetUser
   query GetUser, as: :get_user2

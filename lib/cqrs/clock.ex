@@ -1,4 +1,5 @@
 defmodule Cqrs.Clock do
+  @moduledoc false
   @callback utc_now(_message :: atom()) :: DateTime.t()
 
   def utc_now(message), do: clock().utc_now(message)
