@@ -39,17 +39,21 @@ defmodule Cqrs.DomainEvent do
 
     quote generated: true, location: :keep do
       version = Keyword.get(unquote(opts), :version, 1)
+      explicit_keys = DomainEvent.explicit_keys(unquote(opts))
       inherited_keys = DomainEvent.inherit_keys(unquote(opts))
-      explicit_keys = Keyword.get(unquote(opts), :with, []) |> List.wrap()
-      keys_to_drop = Keyword.get(unquote(opts), :drop, []) |> List.wrap()
+
+      keys =
+        Keyword.merge(inherited_keys, explicit_keys, fn
+          _key, nil, nil -> nil
+          _key, nil, value -> value
+          _key, value, nil -> value
+        end)
 
       if unquote(create_jason_encoders) and Code.ensure_loaded?(Jason), do: @derive(Jason.Encoder)
 
-      defstruct (inherited_keys ++ explicit_keys)
-                |> DomainEvent.drop_keys(keys_to_drop)
-                |> List.delete(:created_at)
-                |> Enum.uniq()
-                |> Kernel.++([:created_at, {:version, version}])
+      defstruct keys
+                |> DomainEvent.drop_keys(unquote(opts))
+                |> Kernel.++([{:created_at, nil}, {:version, version}])
 
       def new(source \\ [], attrs \\ []) do
         DomainEvent.new(__MODULE__, source, attrs)
@@ -58,8 +62,12 @@ defmodule Cqrs.DomainEvent do
   end
 
   @doc false
-  def drop_keys(keys, keys_to_drop) do
+  def drop_keys(keys, opts) do
+    keys_to_drop = Keyword.get(opts, :drop, []) |> List.wrap()
+
     Enum.reject(keys, fn
+      {:__struct__, _} -> true
+      {:created_at, _} -> true
       {name, _default_value} -> Enum.member?(keys_to_drop, name)
       name -> Enum.member?(keys_to_drop, name)
     end)
@@ -73,11 +81,25 @@ defmodule Cqrs.DomainEvent do
 
       source when is_atom(source) ->
         Guards.ensure_is_struct!(source)
-        Map.keys(source.__struct__())
+
+        source
+        |> struct()
+        |> Map.to_list()
 
       source ->
         "#{source} should be a valid struct to use with DomainEvent"
     end
+  end
+
+  @doc false
+  def explicit_keys(opts) do
+    opts
+    |> Keyword.get(:with, [])
+    |> List.wrap()
+    |> Enum.map(fn
+      field when is_tuple(field) -> field
+      field when is_atom(field) or is_binary(field) -> {field, nil}
+    end)
   end
 
   @doc false
