@@ -20,10 +20,6 @@ defmodule Cqrs do
 
   Creates proxy functions for [commands](`#{Command}`) and [events](`#{DomainEvent}`).
 
-  ## [Bounded Contexts for Commanded](`#{BoundedContext.Commanded}`)
-
-  Creates proxy functions for all [commands](`#{Command}`) registered in a [Commanded Router](`Commanded.Commands.Router`)
-
   ## [Absinthe Macros](`#{Absinthe}`)
 
   Macros to derive queries and mutations from [Queries](`#{Query}`) and [Commands](`#{Command}`), respectfully.
