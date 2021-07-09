@@ -46,6 +46,16 @@ defmodule Cqrs.CommandError do
   end
 end
 
+defmodule Cqrs.ValueObjectError do
+  defexception [:errors]
+
+  def message(%{errors: errors}) do
+    errors
+    |> Enum.flat_map(fn {key, messages} -> Enum.map(messages, fn msg -> "#{key} #{msg}" end) end)
+    |> Enum.join("\n")
+  end
+end
+
 defmodule Cqrs.InvalidValuesError do
   defexception [:module]
 
