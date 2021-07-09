@@ -23,7 +23,7 @@ defmodule Cqrs.ValueObjectTest do
   test "yeah?" do
     persona = %{name: "Bjorf", dob: "2030-05-02"}
 
-    {:ok, %AssignThing{thing: "sword", persona: %{name: "Bjorf", dob: ~D[2030-05-02]}}} =
+    {:ok, %AssignThing{thing: "sword", persona: %Persona{name: "Bjorf", dob: ~D[2030-05-02]}}} =
       AssignThing.new(thing: "sword", persona: persona)
   end
 end
