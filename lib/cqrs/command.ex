@@ -117,6 +117,15 @@ defmodule Cqrs.Command do
   @callback handle_validate(Ecto.Changeset.t(), keyword()) :: Ecto.Changeset.t()
 
   @doc """
+  Allows one to modify the incoming attrs before they are validated.
+
+  This callback is optional.
+
+  Invoked before the `handle_validate/2` callback is called.
+  """
+  @callback before_validate(map()) :: map()
+
+  @doc """
   Allows one to modify the fully validated command. The changes to the command are validated again after this callback.
 
   This callback is optional.
@@ -170,6 +179,9 @@ defmodule Cqrs.Command do
       @after_compile Command
 
       @impl true
+      def before_validate(map), do: map
+
+      @impl true
       def handle_validate(command, _opts), do: command
 
       @impl true
@@ -178,7 +190,7 @@ defmodule Cqrs.Command do
       @impl true
       def before_dispatch(command, _opts), do: {:ok, command}
 
-      defoverridable handle_validate: 2, before_dispatch: 2, after_validate: 1
+      defoverridable handle_validate: 2, before_dispatch: 2, after_validate: 1, before_validate: 1
     end
   end
 
@@ -450,6 +462,11 @@ defmodule Cqrs.Command do
   end
 
   def __new__(mod, attrs, required_fields, opts) when is_list(opts) do
+    attrs =
+      mod
+      |> normalize(attrs)
+      |> mod.before_validate()
+
     mod
     |> __init__(attrs, required_fields, opts)
     |> Changeset.put_change(:created_at, Cqrs.Clock.utc_now(mod))
