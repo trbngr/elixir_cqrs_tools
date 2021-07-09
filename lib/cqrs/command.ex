@@ -245,10 +245,10 @@ defmodule Cqrs.Command do
         end)
 
         Enum.map(@schema_value_objects, fn
-          {name, {:array, type}} ->
+          {name, {:array, type}, _opts} ->
             Ecto.Schema.embeds_many(name, type)
 
-          {name, type} ->
+          {name, type, _opts} ->
             Ecto.Schema.embeds_one(name, type)
         end)
       end
@@ -259,7 +259,7 @@ defmodule Cqrs.Command do
     quote do
       @name __MODULE__ |> Module.split() |> Enum.reverse() |> hd() |> to_string()
 
-      def __fields__, do: @schema_fields
+      def __fields__, do: @schema_fields ++ @schema_value_objects
       def __required_fields__, do: @required_fields
       def __module_docs__, do: @moduledoc
       def __command__, do: __MODULE__
@@ -406,7 +406,7 @@ defmodule Cqrs.Command do
       @desc nil
 
       if Command.__is_value_object__?(unquote(type)) do
-        @schema_value_objects {unquote(name), unquote(type)}
+        @schema_value_objects {unquote(name), unquote(type), opts}
       else
         @schema_fields {unquote(name), unquote(type), opts}
       end

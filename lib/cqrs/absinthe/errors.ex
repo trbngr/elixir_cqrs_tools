@@ -7,7 +7,7 @@ if Code.ensure_loaded?(Absinthe) do
     end
   end
 
-  defmodule Cqrs.Absinthe.InvalidEnumSourceError do
+  defmodule Cqrs.Absinthe.InvalidSourceError do
     defexception [:module]
 
     def message(%{module: module}),
