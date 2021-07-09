@@ -53,7 +53,7 @@ if Code.ensure_loaded?(Absinthe) do
 
     """
     alias Cqrs.Guards
-    alias Cqrs.Absinthe.{Enum, Mutation, Query}
+    alias Cqrs.Absinthe.{Enum, Mutation, Object, Query}
 
     defmacro __using__(_) do
       quote do
@@ -67,7 +67,11 @@ if Code.ensure_loaded?(Absinthe) do
             derive_mutation: 3,
             derive_query: 2,
             derive_query: 3,
-            derive_enum: 3
+            derive_enum: 3,
+            derive_object: 2,
+            derive_object: 3,
+            derive_input_object: 2,
+            derive_input_object: 3
           ]
       end
     end
@@ -180,9 +184,40 @@ if Code.ensure_loaded?(Absinthe) do
       Module.eval_quoted(__CALLER__, enum)
     end
 
+    defmacro derive_object(object_name, object_source_module, opts \\ []) do
+      object =
+        quote location: :keep do
+          Cqrs.Absinthe.ensure_is_schema!(unquote(object_source_module))
+
+          Object.create_object(
+            unquote(object_name),
+            unquote(object_source_module),
+            unquote(opts)
+          )
+        end
+
+      Module.eval_quoted(__CALLER__, object)
+    end
+
+    defmacro derive_input_object(object_name, object_source_module, opts \\ []) do
+      object =
+        quote location: :keep do
+          Cqrs.Absinthe.ensure_is_schema!(unquote(object_source_module))
+
+          Object.create_object(
+            unquote(object_name),
+            unquote(object_source_module),
+            Keyword.put(unquote(opts), :input?, true)
+          )
+        end
+
+      Module.eval_quoted(__CALLER__, object)
+    end
+
+    @doc false
     def ensure_is_schema!(module) do
       unless Guards.exports_function?(module, :__schema__, 2) do
-        raise Cqrs.Absinthe.InvalidEnumSourceError, module: module
+        raise Cqrs.Absinthe.InvalidSourceError, module: module
       end
     end
   end

@@ -22,7 +22,11 @@ locals_without_parens = [
   derive_mutation_input: 2,
   derive_mutation: 2,
   derive_mutation: 3,
-  derive_enum: 3
+  derive_enum: 3,
+  derive_object: 2,
+  derive_object: 3,
+  derive_input_object: 2,
+  derive_input_object: 3
 ]
 
 [

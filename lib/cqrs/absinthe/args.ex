@@ -64,7 +64,11 @@ if Code.ensure_loaded?(Absinthe) do
 
     defp absinthe_type({_name, :binary_id, _}, _opts), do: quote(do: :id)
     defp absinthe_type({_name, :utc_datetime, _}, _opts), do: quote(do: :datetime)
-    defp absinthe_type({_name, type, _}, _opts), do: quote(do: unquote(type))
+
+    defp absinthe_type({name, type, _}, opts) do
+      type = get_named_arg_type_mapping(name, opts) || type
+      quote do: unquote(type)
+    end
 
     defp get_configured_type_mapping(type) do
       :cqrs_tools

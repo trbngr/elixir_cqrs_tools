@@ -135,6 +135,7 @@ defmodule Cqrs.Query do
       @name __MODULE__ |> Module.split() |> Enum.reverse() |> hd() |> to_string()
 
       def __filters__, do: @filters
+      def __fields__, do: @filters
       def __required_filters__, do: @required_filters
       def __module_docs__, do: @moduledoc
       def __query__, do: __MODULE__
