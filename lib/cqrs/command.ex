@@ -484,9 +484,8 @@ defmodule Cqrs.Command do
       |> struct()
       |> Changeset.cast(attrs, fields -- embeds)
 
-    changeset = Enum.reduce(embeds, changeset, &Changeset.cast_embed(&2, &1))
-
-    changeset
+    embeds
+    |> Enum.reduce(changeset, &Changeset.cast_embed(&2, &1))
     |> Changeset.validate_required(required_fields)
     |> mod.handle_validate(opts)
   end
