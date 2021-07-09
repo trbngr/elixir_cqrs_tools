@@ -155,6 +155,7 @@ defmodule Cqrs.Command do
       Module.register_attribute(__MODULE__, :events, accumulate: true)
       Module.register_attribute(__MODULE__, :options, accumulate: true)
       Module.register_attribute(__MODULE__, :schema_fields, accumulate: true)
+      Module.register_attribute(__MODULE__, :schema_value_objects, accumulate: true)
       Module.register_attribute(__MODULE__, :required_fields, accumulate: true)
 
       require Cqrs.Options
@@ -199,6 +200,7 @@ defmodule Cqrs.Command do
       Module.delete_attribute(__MODULE__, :required_fields)
       Module.delete_attribute(__MODULE__, :require_all_fields)
       Module.delete_attribute(__MODULE__, :default_event_values)
+      Module.delete_attribute(__MODULE__, :schema_value_objects)
       Module.delete_attribute(__MODULE__, :create_jason_encoders)
     end
   end
@@ -228,6 +230,14 @@ defmodule Cqrs.Command do
 
           {name, type, opts} ->
             Ecto.Schema.field(name, type, opts)
+        end)
+
+        Enum.map(@schema_value_objects, fn
+          {name, {:array, type}} ->
+            Ecto.Schema.embeds_many(name, type)
+
+          {name, type} ->
+            Ecto.Schema.embeds_one(name, type)
         end)
       end
     end
@@ -383,9 +393,19 @@ defmodule Cqrs.Command do
       # reset the @desc attr
       @desc nil
 
-      @schema_fields {unquote(name), unquote(type), opts}
+      if Command.__is_value_object__?(unquote(type)) do
+        @schema_value_objects {unquote(name), unquote(type)}
+      else
+        @schema_fields {unquote(name), unquote(type), opts}
+      end
     end
   end
+
+  def __is_value_object__?({:array, type}),
+    do: Guards.exports_function?(type, :__value_object__, 0)
+
+  def __is_value_object__?(type),
+    do: Guards.exports_function?(type, :__value_object__, 0)
 
   @doc """
   The same as `field/3` but sets the option `internal` to `true`.
@@ -440,11 +460,21 @@ defmodule Cqrs.Command do
 
   def __init__(mod, attrs, required_fields, opts) do
     fields = mod.__schema__(:fields)
+    embeds = mod.__schema__(:embeds)
 
-    attrs = normalize(mod, attrs)
+    attrs =
+      mod
+      |> normalize(attrs)
+      |> normalize_attrs()
 
-    struct(mod)
-    |> Changeset.cast(attrs, fields)
+    changeset =
+      mod
+      |> struct()
+      |> Changeset.cast(attrs, fields -- embeds)
+
+    changeset = Enum.reduce(embeds, changeset, &Changeset.cast_embed(&2, &1))
+
+    changeset
     |> Changeset.validate_required(required_fields)
     |> mod.handle_validate(opts)
   end
@@ -494,6 +524,17 @@ defmodule Cqrs.Command do
   defp normalize(_mod, values) when is_struct(values), do: Map.from_struct(values)
   defp normalize(_mod, values) when is_map(values), do: values
   defp normalize(mod, _other), do: raise(InvalidValuesError, module: mod)
+
+  defp normalize_attrs(list) when is_list(list), do: Enum.map(list, &normalize_attrs/1)
+
+  defp normalize_attrs(map) when is_map(map) do
+    Enum.into(map, %{}, fn
+      {key, value} when is_struct(key) -> {key, normalize_attrs(Map.from_struct(value))}
+      {key, value} -> {key, value}
+    end)
+  end
+
+  defp normalize_attrs(other), do: other
 
   def __do_dispatch__(mod, %{__struct__: mod} = command, opts) do
     run_dispatch = fn command ->
