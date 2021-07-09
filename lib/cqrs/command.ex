@@ -505,6 +505,7 @@ defmodule Cqrs.Command do
     end
 
     case mod.before_dispatch(command, opts) do
+      {:error, errors} when is_list(errors) -> {:error, List.flatten(errors)}
       {:error, error} -> {:error, error}
       {:ok, command} -> run_dispatch.(command)
       %{__struct__: ^mod} -> run_dispatch.(command)
