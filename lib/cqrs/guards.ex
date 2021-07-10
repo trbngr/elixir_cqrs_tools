@@ -25,12 +25,6 @@ defmodule Cqrs.Guards do
     end
   end
 
-  def ensure_is_commanded_router!(module) do
-    unless exports_function?(module, :__registered_commands__, 0) do
-      raise InvalidRouterError, router: module
-    end
-  end
-
   def ensure_is_dispatcher!(module) do
     unless exports_function?(module, :dispatch, 2) do
       raise InvalidDispatcherError, dispatcher: module
