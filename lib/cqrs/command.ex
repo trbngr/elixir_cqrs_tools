@@ -1,5 +1,5 @@
 defmodule Cqrs.Command do
-  alias Cqrs.{Command, CommandError, Documentation, DomainEvent, Guards, Options, InvalidValuesError}
+  alias Cqrs.{Command, CommandError, Documentation, DomainEvent, Guards, Metadata, Options, InvalidValuesError}
 
   @moduledoc """
   The `Command` macro allows you to define a command that encapsulates a struct definition,
@@ -467,6 +467,8 @@ defmodule Cqrs.Command do
       |> normalize(attrs)
       |> mod.before_validate()
 
+    opts = Metadata.put_default_metadata(opts)
+
     mod
     |> __init__(attrs, required_fields, opts)
     |> Changeset.put_change(:created_at, Cqrs.Clock.utc_now(mod))
@@ -513,6 +515,8 @@ defmodule Cqrs.Command do
   defp normalize(mod, _other), do: raise(InvalidValuesError, module: mod)
 
   def __do_dispatch__(mod, %{__struct__: mod} = command, opts) do
+    opts = Metadata.put_default_metadata(opts)
+
     run_dispatch = fn command ->
       tag? = Keyword.get(opts, :tag?)
 
