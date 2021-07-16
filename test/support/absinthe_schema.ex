@@ -12,7 +12,7 @@ end
 defmodule WidgetTypes do
   use Cqrs.Absinthe
 
-  derive_enum :widget_status, ChangeWidgetStatus, :status
+  derive_enum :widget_status, {ChangeWidgetStatus, :status}
 
   object :widget do
     field :status, :widget_status
