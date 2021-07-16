@@ -57,8 +57,6 @@ if Code.ensure_loaded?(Absinthe) do
 
     defmacro __using__(_) do
       quote do
-        use Absinthe.Schema.Notation
-
         import Cqrs.Absinthe,
           only: [
             derive_mutation_input: 1,

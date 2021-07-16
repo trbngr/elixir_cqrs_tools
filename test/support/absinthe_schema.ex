@@ -11,6 +11,7 @@ end
 
 defmodule WidgetTypes do
   use Cqrs.Absinthe
+  use Absinthe.Schema.Notation
 
   derive_enum :widget_status, {ChangeWidgetStatus, :status}
 
