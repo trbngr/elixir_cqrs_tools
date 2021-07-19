@@ -4,43 +4,13 @@ defmodule Cqrs.Documentation do
 
   defmacro option_docs(options) do
     quote bind_quoted: [options: options] do
-      docs =
-        options
-        |> Enum.sort_by(&elem(&1, 0))
-        |> Enum.map(fn
-          {name, {:enum, possible_values}, opts} ->
-            default = Documentation.option_default(opts)
-            description = Documentation.option_description(opts)
+      docs = NimbleOptions.docs(options, [])
 
-            values =
-              possible_values
-              |> Enum.map(&"`#{&1}`")
-              |> Enum.join(" | ")
+      """
+      ## Options
 
-            "* `#{name}`: `:enum`.#{description}Possible values: #{values}. Defaults to `#{inspect(default)}`."
-
-          {name, hint, opts} ->
-            default = Documentation.option_default(opts)
-            description = Documentation.option_description(opts)
-
-            hint =
-              cond do
-                is_binary(hint) -> hint
-                true -> inspect(hint)
-              end
-
-            "* `#{name}` (#{hint}) - #{description}Defaults to `#{inspect(default)}`"
-        end)
-
-      if length(docs) > 0 do
-        """
-        ## Options
-
-        #{Enum.join(docs, "\n")}
-        """
-      else
-        ""
-      end
+      #{docs}
+      """
     end
   end
 

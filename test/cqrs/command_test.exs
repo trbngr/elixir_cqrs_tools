@@ -8,6 +8,9 @@ defmodule Cqrs.CommandTest do
 
     field :name, :string
 
+    option :do_other_thing, :integer, default: false
+    option :do_thing, :boolean, default: false
+
     @impl true
     def handle_validate(changeset, opts) do
       send(self(), {:handle_validate, changeset, opts})
@@ -101,6 +104,13 @@ defmodule Cqrs.CommandTest do
 
       assert_receive({:handle_dispatch, %CommandOne{name: "chris"}, opts})
       assert :a == Keyword.get(opts, :value)
+    end
+  end
+
+  describe "options" do
+    test "invalid options" do
+      CommandOne.new(%{name: "chris"}, do_thing: 123, do_other_thing: false)
+      |> IO.inspect(label: "~/code/personal/cqrs_tools/test/cqrs/command_test.exs:112")
     end
   end
 end

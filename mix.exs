@@ -44,7 +44,8 @@ defmodule CqrsTools.MixProject do
       {:commanded, "~> 1.0", optional: true},
       {:ex_doc, "~> 0.24", only: :dev, runtime: false},
       {:elixir_uuid, "~> 1.6", override: true, hex: :uuid_utils, only: :test},
-      {:git_hooks, "~> 0.6.2", only: [:dev], runtime: false}
+      {:git_hooks, "~> 0.6.2", only: [:dev], runtime: false},
+      {:nimble_options, "~> 0.3"}
     ]
   end
 end

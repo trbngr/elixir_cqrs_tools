@@ -172,6 +172,7 @@ defmodule Cqrs.Command do
         only: [field: 2, field: 3, derive_event: 1, derive_event: 2, internal_field: 2, internal_field: 3, option: 3]
 
       @options Cqrs.Options.tag_option()
+      @options Cqrs.Options.metadata_option()
 
       @desc nil
       @behaviour Command
@@ -254,6 +255,7 @@ defmodule Cqrs.Command do
       def __module_docs__, do: @moduledoc
       def __command__, do: __MODULE__
       def __name__, do: @name
+      def __options_schema__, do: @options
     end
   end
 
@@ -414,12 +416,10 @@ defmodule Cqrs.Command do
   @doc """
   Describes a supported option for this command.
 
-  ## Options
-  * `:default` - this default value if the option is not provided.
-  * `:description` - The documentation for this option.
+  Check the documentation of [NimbleOptions](`NimbleOptions`) for types and options.
   """
 
-  @spec option(name :: atom(), hint :: atom(), keyword()) :: any()
+  @spec option(name :: atom(), type :: any(), keyword()) :: any()
   defmacro option(name, hint, opts) do
     quote do
       Options.option(unquote(name), unquote(hint), unquote(opts))
@@ -462,35 +462,37 @@ defmodule Cqrs.Command do
   end
 
   def __new__(mod, attrs, required_fields, opts) when is_list(opts) do
-    attrs =
-      mod
-      |> normalize(attrs)
-      |> mod.before_validate()
-
     opts = Metadata.put_default_metadata(opts)
 
-    mod
-    |> __init__(attrs, required_fields, opts)
-    |> Changeset.put_change(:created_at, Cqrs.Clock.utc_now(mod))
-    |> case do
-      %{valid?: false} = changeset ->
-        {:error, changeset}
+    with {:ok, opts} <- Options.validate_opts(mod, opts) do
+      attrs =
+        mod
+        |> normalize(attrs)
+        |> mod.before_validate()
 
-      %{valid?: true} = changeset ->
-        attrs =
+      mod
+      |> __init__(attrs, required_fields, opts)
+      |> Changeset.put_change(:created_at, Cqrs.Clock.utc_now(mod))
+      |> case do
+        %{valid?: false} = changeset ->
+          {:error, changeset}
+
+        %{valid?: true} = changeset ->
+          attrs =
+            changeset
+            |> Changeset.apply_changes()
+            |> mod.after_validate()
+
+          changeset2 = __init__(mod, attrs, required_fields, opts)
+
           changeset
-          |> Changeset.apply_changes()
-          |> mod.after_validate()
-
-        changeset2 = __init__(mod, attrs, required_fields, opts)
-
-        changeset
-        |> Changeset.merge(changeset2)
-        |> Changeset.apply_action(:create)
-    end
-    |> case do
-      {:ok, command} -> {:ok, command}
-      {:error, changeset} -> {:error, format_errors(changeset)}
+          |> Changeset.merge(changeset2)
+          |> Changeset.apply_action(:create)
+      end
+      |> case do
+        {:ok, command} -> {:ok, command}
+        {:error, changeset} -> {:error, format_errors(changeset)}
+      end
     end
   end
 
@@ -517,19 +519,21 @@ defmodule Cqrs.Command do
   def __do_dispatch__(mod, %{__struct__: mod} = command, opts) do
     opts = Metadata.put_default_metadata(opts)
 
-    run_dispatch = fn command ->
-      tag? = Keyword.get(opts, :tag?)
+    with {:ok, opts} <- Options.validate_opts(mod, opts) do
+      run_dispatch = fn command ->
+        tag? = Keyword.get(opts, :tag?)
 
-      command
-      |> mod.handle_dispatch(opts)
-      |> tag_result(tag?)
-    end
+        command
+        |> mod.handle_dispatch(opts)
+        |> tag_result(tag?)
+      end
 
-    case mod.before_dispatch(command, opts) do
-      {:error, errors} when is_list(errors) -> {:error, List.flatten(errors)}
-      {:error, error} -> {:error, error}
-      {:ok, command} -> run_dispatch.(command)
-      %{__struct__: ^mod} -> run_dispatch.(command)
+      case mod.before_dispatch(command, opts) do
+        {:error, errors} when is_list(errors) -> {:error, List.flatten(errors)}
+        {:error, error} -> {:error, error}
+        {:ok, command} -> run_dispatch.(command)
+        %{__struct__: ^mod} -> run_dispatch.(command)
+      end
     end
   end
 

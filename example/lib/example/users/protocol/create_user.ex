@@ -6,12 +6,10 @@ defmodule Example.Users.Protocol.CreateUser do
 
   field :id, :binary_id, internal: true
 
-  field :name, :string, description: "The user's name"
+  field :name, :string, description: "The user's name."
 
   @desc "The user's email"
   field :email, :string
-
-  option :metadata, :map, default: %{}, description: "User metadata"
 
   derive_event UserCreated, with: [status: :active]
 

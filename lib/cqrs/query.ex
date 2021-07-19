@@ -97,7 +97,9 @@ defmodule Cqrs.Query do
       import Query, only: [filter: 2, filter: 3, binding: 2, option: 3]
 
       @desc nil
+
       @options Cqrs.Options.tag_option()
+      @options Cqrs.Options.metadata_option()
 
       @behaviour Query
       @before_compile Query
@@ -139,6 +141,7 @@ defmodule Cqrs.Query do
       def __module_docs__, do: @moduledoc
       def __query__, do: __MODULE__
       def __name__, do: @name
+      def __options_schema__, do: @options
     end
   end
 
@@ -252,9 +255,7 @@ defmodule Cqrs.Query do
   @doc """
   Describes a supported option for this query.
 
-  ## Options
-  * `:default` - this default value if the option is not provided.
-  * `:description` - The documentation for this option.
+  Check the documentation of [NimbleOptions](`NimbleOptions`) for types and options.
   """
 
   @spec option(name :: atom(), hint :: atom(), keyword()) :: any()
@@ -271,21 +272,23 @@ defmodule Cqrs.Query do
   end
 
   def __new__(mod, filters, required_filters, opts) when is_list(opts) do
-    fields = mod.__schema__(:fields)
-
     opts = Metadata.put_default_metadata(opts)
-    filters = normalize(mod, filters)
 
-    filters =
-      struct(mod)
-      |> Changeset.cast(filters, fields)
-      |> Changeset.validate_required(required_filters)
-      |> mod.handle_validate(opts)
-      |> Changeset.apply_action(:create)
+    with {:ok, opts} <- Options.validate_opts(mod, opts) do
+      fields = mod.__schema__(:fields)
+      filters = normalize(mod, filters)
 
-    case filters do
-      {:ok, filters} -> create_query(mod, filters, opts)
-      {:error, filters} -> {:error, format_errors(filters)}
+      filters =
+        struct(mod)
+        |> Changeset.cast(filters, fields)
+        |> Changeset.validate_required(required_filters)
+        |> mod.handle_validate(opts)
+        |> Changeset.apply_action(:create)
+
+      case filters do
+        {:ok, filters} -> create_query(mod, filters, opts)
+        {:error, filters} -> {:error, format_errors(filters)}
+      end
     end
   end
 
@@ -336,11 +339,14 @@ defmodule Cqrs.Query do
 
   defp do_execute(mod, execute_fun, query, opts) do
     opts = Metadata.put_default_metadata(opts)
-    tag? = Keyword.get(opts, :tag?)
 
-    mod
-    |> apply(execute_fun, [query, opts])
-    |> tag_result(tag?)
+    with {:ok, opts} <- Options.validate_opts(mod, opts) do
+      tag? = Keyword.get(opts, :tag?)
+
+      mod
+      |> apply(execute_fun, [query, opts])
+      |> tag_result(tag?)
+    end
   end
 
   defp tag_result({:ok, result}, true), do: {:ok, result}
