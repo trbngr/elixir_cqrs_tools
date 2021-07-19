@@ -166,6 +166,9 @@ defmodule Cqrs.Query do
       @primary_key false
       embedded_schema do
         Enum.map(@filters, fn
+          {name, {:array, :enum}, opts} ->
+            Ecto.Schema.field(name, {:array, Ecto.Enum}, opts)
+
           {name, :enum, opts} ->
             Ecto.Schema.field(name, Ecto.Enum, opts)
 

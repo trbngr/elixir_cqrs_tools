@@ -232,6 +232,9 @@ defmodule Cqrs.Command do
         Ecto.Schema.field(:created_at, :utc_datetime)
 
         Enum.map(@schema_fields, fn
+          {name, {:array, :enum}, opts} ->
+            Ecto.Schema.field(name, {:array, Ecto.Enum}, opts)
+
           {name, :enum, opts} ->
             Ecto.Schema.field(name, Ecto.Enum, opts)
 
