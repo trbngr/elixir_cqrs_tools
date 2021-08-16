@@ -1,7 +1,7 @@
 if Code.ensure_loaded?(Absinthe) do
   defmodule Cqrs.Absinthe.Query do
     @moduledoc false
-    alias Cqrs.{BoundedContext, Absinthe.Args, Absinthe.Metadata}
+    alias Cqrs.{BoundedContext, Absinthe.Args, Absinthe.Metadata, Absinthe.Middleware}
 
     def create_connection_query(query_module, returns, opts) do
       function_name = BoundedContext.__function_name__(query_module, opts)
@@ -15,8 +15,12 @@ if Code.ensure_loaded?(Absinthe) do
       repo = Keyword.fetch!(opts, :repo)
 
       quote do
+        require Middleware
+
         connection field unquote(function_name), node_type: unquote(returns) do
           unquote_splicing(query_args)
+
+          Middleware.before_resolve(unquote(query_module), unquote(opts))
 
           resolve(fn args, resolution ->
             alias Absinthe.Relay.Connection
@@ -36,6 +40,8 @@ if Code.ensure_loaded?(Absinthe) do
                 Connection.from_query(query, repo_fun, args)
             end
           end)
+
+          Middleware.after_resolve(unquote(query_module), unquote(opts))
         end
       end
     end
@@ -45,8 +51,12 @@ if Code.ensure_loaded?(Absinthe) do
       query_args = create_query_args(query_module, opts)
 
       quote do
+        require Middleware
+
         field unquote(function_name), unquote(returns) do
           unquote_splicing(query_args)
+
+          Middleware.before_resolve(unquote(query_module), unquote(opts))
 
           resolve(fn attrs, resolution ->
             opts =
@@ -56,6 +66,8 @@ if Code.ensure_loaded?(Absinthe) do
 
             BoundedContext.__execute_query__(unquote(query_module), attrs, opts)
           end)
+
+          Middleware.after_resolve(unquote(query_module), unquote(opts))
         end
       end
     end
