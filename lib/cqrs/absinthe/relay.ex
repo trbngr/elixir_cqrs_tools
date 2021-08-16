@@ -27,6 +27,8 @@ if Code.ensure_loaded?(Absinthe.Relay) do
     * `:only` - Use only the filters listed
     * `:except` - Create filters for all except those listed
     * `:arg_types` - A list of filter names to absinthe types. See example.
+    * `:before_resolve` - [Absinthe Middleware](`Absinthe.Middleware`) to run before the resolver.
+    * `:after_resolve` - [Absinthe Middleware](`Absinthe.Middleware`) to run after the resolver.
 
     ## Example
 

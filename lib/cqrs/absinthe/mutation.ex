@@ -1,7 +1,7 @@
 if Code.ensure_loaded?(Absinthe) do
   defmodule Cqrs.Absinthe.Mutation do
     @moduledoc false
-    alias Cqrs.{BoundedContext, Absinthe.Args, Absinthe.Metadata, Absinthe.Errors}
+    alias Cqrs.{BoundedContext, Absinthe.Args, Absinthe.Metadata, Absinthe.Errors, Absinthe.Middleware}
 
     def create_input_object(command_module, opts) do
       function_name = BoundedContext.__function_name__(command_module, opts)
@@ -30,8 +30,12 @@ if Code.ensure_loaded?(Absinthe) do
       args = create_mutatation_args(command_module, function_name, opts)
 
       quote do
+        require Middleware
+
         field unquote(function_name), unquote(returns) do
           unquote_splicing(args)
+
+          Middleware.before_resolve(unquote(command_module), unquote(opts))
 
           resolve(fn args, resolution ->
             attrs = Map.get(args, :input, args)
@@ -43,6 +47,8 @@ if Code.ensure_loaded?(Absinthe) do
 
             BoundedContext.__dispatch_command__(unquote(command_module), attrs, opts)
           end)
+
+          Middleware.after_resolve(unquote(command_module), unquote(opts))
         end
       end
     end

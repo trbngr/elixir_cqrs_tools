@@ -14,6 +14,14 @@ if Code.ensure_loaded?(Absinthe) do
       do: "#{inspect(module)} is not a Cqrs.Query, Cqrs.Command, or an Ecto.Schema"
   end
 
+  defmodule Cqrs.Absinthe.InvalidMiddlewareFunction do
+    defexception [:module, :position]
+
+    def message(%{module: module, position: position}) do
+      "#{inspect(module)} #{position} function should arity 2"
+    end
+  end
+
   defmodule Cqrs.Absinthe.MapTypeMappingError do
     defexception [:source, :macro, :type]
 

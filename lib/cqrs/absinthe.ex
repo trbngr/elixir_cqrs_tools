@@ -78,6 +78,8 @@ if Code.ensure_loaded?(Absinthe) do
     * `:as` - The name to use for the query. Defaults to the query_module name snake_cased.
     * `:only` - Use only the filters listed
     * `:except` - Create filters for all except those listed
+    * `:before_resolve` - [Absinthe Middleware](`Absinthe.Middleware`) to run before the resolver.
+    * `:after_resolve` - [Absinthe Middleware](`Absinthe.Middleware`) to run after the resolver.
     """
     defmacro derive_query(query_module, return_type, opts \\ []) do
       opts = Macro.escape(opts)
@@ -135,6 +137,8 @@ if Code.ensure_loaded?(Absinthe) do
       * If `true`, one arg with the name of `:input` will be generated.
 
       * If `true`, an `input_object` for the [Command](`Cqrs.Command`) is expected to exist. See `derive_mutation_input/2`.
+    * `:before_resolve` - [Absinthe Middleware](`Absinthe.Middleware`) to run before the resolver.
+    * `:after_resolve` - [Absinthe Middleware](`Absinthe.Middleware`) to run after the resolver.
 
     """
     defmacro derive_mutation(command_module, return_type, opts \\ []) do
