@@ -230,6 +230,7 @@ defmodule Cqrs.Command do
       @primary_key false
       embedded_schema do
         Ecto.Schema.field(:created_at, :utc_datetime)
+        Ecto.Schema.field(:discarded_fields, :map, virtual: true)
 
         Enum.map(@schema_fields, fn
           {name, {:array, :enum}, opts} ->
@@ -341,11 +342,15 @@ defmodule Cqrs.Command do
 
     create_event = fn {name, opts, {file, line}} ->
       options =
-        Keyword.update(opts, :with, command_fields, fn fields ->
+        opts
+        |> Keyword.update(:with, command_fields, fn fields ->
           fields
           |> List.wrap()
           |> Kernel.++(command_fields)
           |> Enum.uniq()
+        end)
+        |> Keyword.update(:drop, [:discarded_fields], fn drops ->
+          Enum.uniq([:discarded_fields | List.wrap(drops)])
         end)
 
       domain_event =
@@ -492,8 +497,11 @@ defmodule Cqrs.Command do
         |> Changeset.apply_action(:create)
     end
     |> case do
-      {:ok, command} -> {:ok, command}
-      {:error, changeset} -> {:error, format_errors(changeset)}
+      {:ok, command} ->
+        {:ok, Map.put(command, :discarded_fields, discarded_data(mod, attrs))}
+
+      {:error, changeset} ->
+        {:error, format_errors(changeset)}
     end
   end
 
@@ -502,6 +510,11 @@ defmodule Cqrs.Command do
       {:ok, command} -> command
       {:error, errors} -> raise CommandError, errors: errors
     end
+  end
+
+  defp discarded_data(mod, attrs) do
+    fields = mod.__schema__(:fields)
+    Map.drop(attrs, fields)
   end
 
   defp format_errors(changeset) do
