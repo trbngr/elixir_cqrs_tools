@@ -29,7 +29,6 @@ if Code.ensure_loaded?(Absinthe) do
               unquote(query_module)
               |> Query.read_filters_from_parent(parent, unquote(opts))
               |> Map.merge(args)
-              |> IO.inspect(label: "args")
 
             opts = Metadata.merge(resolution, unquote(opts))
 
