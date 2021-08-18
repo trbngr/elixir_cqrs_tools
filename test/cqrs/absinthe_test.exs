@@ -8,6 +8,48 @@ defmodule Cqrs.AbsintheTest do
     assert [:new, :old] == Map.keys(values)
   end
 
+  describe "filters from parent" do
+    test "works for connections" do
+      Absinthe.run(
+        """
+          query userAndFriends {
+            getUser(email: "chris@example.com") {
+              name
+              friendsConnection(first: 5){
+                edges {
+                  node{
+                    name
+                  }
+                }
+              }
+            }
+          }
+        """,
+        AbsintheSchema
+      )
+
+      assert_receive {:friends_query_params, [{"052c1984-74c9-522f-858f-f04f1d4cc786", {0, :id}}]}
+    end
+
+    test "works for queries" do
+      Absinthe.run(
+        """
+          query userAndFriends {
+            getUser(email: "chris@example.com") {
+              name
+              friends{
+                name
+              }
+            }
+          }
+        """,
+        AbsintheSchema
+      )
+
+      assert_receive {:friends_query_params, [{"052c1984-74c9-522f-858f-f04f1d4cc786", {0, :id}}]}
+    end
+  end
+
   describe "middleware" do
     test "is executed for query" do
       Absinthe.run(

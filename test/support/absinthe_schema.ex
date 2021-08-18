@@ -37,6 +37,11 @@ defmodule TempRepo do
       }
     ]
   end
+
+  def all_friends(%Ecto.Query{wheres: [%{params: params}]}) do
+    send(self(), {:friends_query_params, params})
+    []
+  end
 end
 
 defmodule UserTypes do
@@ -49,6 +54,16 @@ defmodule UserTypes do
     field :id, :id
     field :name, :string
     field :email, :string
+
+    derive_query GetUserFriends, list_of(:user),
+      as: :friends,
+      filters_from_parent: [user_id: :id]
+
+    derive_connection GetUserFriends, :user,
+      as: :friends_connection,
+      filters_from_parent: [user_id: :id],
+      repo: TempRepo,
+      repo_fun: :all_friends
   end
 
   connection(node_type: :user)

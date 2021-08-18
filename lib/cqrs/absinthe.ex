@@ -30,6 +30,10 @@ if Code.ensure_loaded?(Absinthe) do
             field :name, :string
             field :email, :string
             field :status, :user_status
+
+            derive_query GetUserFriends, list_of(:user),
+              as: :friends,
+              filters_from_parent: [user_id: :id]
           end
 
           object :user_queries do
@@ -80,6 +84,7 @@ if Code.ensure_loaded?(Absinthe) do
     * `:except` - Create filters for all except those listed
     * `:before_resolve` - [Absinthe Middleware](`Absinthe.Middleware`) to run before the resolver.
     * `:after_resolve` - [Absinthe Middleware](`Absinthe.Middleware`) to run after the resolver.
+    * `:filters_from_parent` - A keyword list of query filters to parent fields. See example.
     """
     defmacro derive_query(query_module, return_type, opts \\ []) do
       opts = Macro.escape(opts)

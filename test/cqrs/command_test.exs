@@ -23,8 +23,8 @@ defmodule Cqrs.CommandTest do
     end
 
     @impl true
-    def before_dispatch(command, opts) do
-      send(self(), {:discarded, Map.get(command, :discarded_fields)})
+    def before_dispatch(%{discarded_fields: extra_data} = command, opts) do
+      send(self(), {:discarded, extra_data})
       send(self(), {:before_dispatch, command, opts})
 
       if Keyword.get(opts, :return_error, false),
@@ -110,7 +110,7 @@ defmodule Cqrs.CommandTest do
   describe "discarded_fields" do
     test "preserves extra data" do
       assert {:ok, :dispatched} =
-               CommandOne.new(name: "chris", company: "oforce")
+               CommandOne.new(name: "chris", company: "oforce", perform_work: true, individual_lksjd: "lkajdsf")
                |> CommandOne.dispatch()
 
       assert_receive({:discarded, %{company: "oforce"}})
