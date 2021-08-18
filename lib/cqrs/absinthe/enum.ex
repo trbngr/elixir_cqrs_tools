@@ -1,5 +1,6 @@
 if Code.ensure_loaded?(Absinthe) do
   defmodule Cqrs.Absinthe.Enum do
+    @moduledoc false
     alias Cqrs.Absinthe.InvalidEnumError
 
     def create_enum(enum_name, source_module, field_name) do

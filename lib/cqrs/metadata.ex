@@ -1,4 +1,5 @@
 defmodule Cqrs.Metadata do
+  @moduledoc false
   @callback get_metadata() :: map()
 
   def get_metadata, do: adapter().get_metadata()
