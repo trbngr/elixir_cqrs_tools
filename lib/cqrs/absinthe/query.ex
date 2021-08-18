@@ -26,9 +26,10 @@ if Code.ensure_loaded?(Absinthe) do
             alias Absinthe.Relay.Connection
 
             args =
-              parent
-              |> Query.read_filters_from_parent(unquote(opts))
+              unquote(query_module)
+              |> Query.read_filters_from_parent(parent, unquote(opts))
               |> Map.merge(args)
+              |> IO.inspect(label: "args")
 
             opts = Metadata.merge(resolution, unquote(opts))
 
@@ -70,8 +71,8 @@ if Code.ensure_loaded?(Absinthe) do
               |> Keyword.put(:tag?, true)
 
             args =
-              parent
-              |> Query.read_filters_from_parent(unquote(opts))
+              unquote(query_module)
+              |> Query.read_filters_from_parent(parent, unquote(opts))
               |> Map.merge(args)
 
             case BoundedContext.__execute_query__(unquote(query_module), args, opts) do
@@ -112,11 +113,36 @@ if Code.ensure_loaded?(Absinthe) do
       Keyword.get(opts, :filters_from_parent, [])
     end
 
-    def read_filters_from_parent(parent, opts) do
+    require Logger
+
+    def read_filters_from_parent(_query_module, nil, _opts), do: %{}
+
+    def read_filters_from_parent(query_module, parent, opts) do
+      parent_keys = (Map.keys(parent) -- [:__meta__, :__struct__]) |> Enum.join(", ")
+
+      Logger.log(:debug, [
+        "QUERY FILTER FROM PARENT query=",
+        inspect(query_module),
+        " parent keys=[",
+        parent_keys,
+        "]"
+      ])
+
       opts
       |> filters_from_parent()
       |> Enum.reduce(%{}, fn {filter, parent_field}, acc ->
-        Map.put(acc, filter, Map.get(parent, parent_field))
+        value = Map.get(parent, parent_field)
+
+        Logger.log(:debug, [
+          "SETTING FILTER FROM PARENT filter=",
+          inspect(filter),
+          " parent=",
+          inspect(parent_field),
+          " value=",
+          inspect(value)
+        ])
+
+        Map.put(acc, filter, value)
       end)
     end
   end
