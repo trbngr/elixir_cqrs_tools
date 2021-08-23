@@ -101,4 +101,38 @@ defmodule Cqrs.AbsintheTest do
       assert_receive(:after_resolve)
     end
   end
+
+  describe "assign_parent_to_field" do
+    setup do
+      Absinthe.run(
+        """
+        mutation CreateUser {
+          createUser(name: "chris", email: "chris@example.com")
+        }
+        """,
+        AbsintheSchema
+      )
+    end
+
+    test "returns parent user" do
+      {:ok, data} =
+        Absinthe.run(
+          """
+          query user {
+            getUser(email: "chris@example.com") {
+              name
+              assignParent {
+                parentName: name
+              }
+            }
+          }
+          """,
+          AbsintheSchema
+        )
+
+      assert %{"name" => name, "assignParent" => %{"parentName" => parent_name}} = get_in(data, [:data, "getUser"])
+
+      assert name == parent_name
+    end
+  end
 end

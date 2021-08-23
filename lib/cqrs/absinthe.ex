@@ -144,6 +144,7 @@ if Code.ensure_loaded?(Absinthe) do
       * If `true`, an `input_object` for the [Command](`Cqrs.Command`) is expected to exist. See `derive_mutation_input/2`.
     * `:before_resolve` - [Absinthe Middleware](`Absinthe.Middleware`) to run before the resolver.
     * `:after_resolve` - [Absinthe Middleware](`Absinthe.Middleware`) to run after the resolver.
+    * `:assign_parent_to_field` - If declared, will assign the parent object to the command field defined
 
     """
     defmacro derive_mutation(command_module, return_type, opts \\ []) do

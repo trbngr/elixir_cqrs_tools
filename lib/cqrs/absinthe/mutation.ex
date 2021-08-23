@@ -29,6 +29,7 @@ if Code.ensure_loaded?(Absinthe) do
       function_name = BoundedContext.__function_name__(command_module, opts)
       args = create_mutatation_args(command_module, function_name, opts)
       description = command_module.__simple_moduledoc__()
+      assign_parent_to_field = Keyword.get(opts, :assign_parent_to_field)
 
       quote do
         require Middleware
@@ -39,8 +40,14 @@ if Code.ensure_loaded?(Absinthe) do
 
           Middleware.before_resolve(unquote(command_module), unquote(opts))
 
-          resolve(fn args, resolution ->
+          resolve(fn parent, args, resolution ->
             attrs = Map.get(args, :input, args)
+
+            attrs =
+              case unquote(assign_parent_to_field) do
+                nil -> attrs
+                command_field -> Map.put(attrs, command_field, parent)
+              end
 
             opts =
               resolution
@@ -69,7 +76,10 @@ if Code.ensure_loaded?(Absinthe) do
     end
 
     defp create_mutatation_args(command_module, opts) do
+      assign_parent_to_field = Keyword.get(opts, :assign_parent_to_field, :x)
+
       command_module.__fields__()
+      |> Enum.reject(fn {field, _, _} -> field == assign_parent_to_field end)
       |> Args.extract_args(opts)
       |> Enum.map(fn {name, absinthe_type, required, opts} ->
         case required do

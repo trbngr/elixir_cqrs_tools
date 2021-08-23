@@ -44,6 +44,16 @@ defmodule TempRepo do
   end
 end
 
+defmodule TestAssignParentToField do
+  use Cqrs.Command
+
+  field :current_user, :map
+
+  def handle_dispatch(%{current_user: user}, _opts) do
+    {:ok, user}
+  end
+end
+
 defmodule UserTypes do
   use Cqrs.Absinthe
   use Cqrs.Absinthe.Relay
@@ -54,6 +64,10 @@ defmodule UserTypes do
     field :id, :id
     field :name, :string
     field :email, :string
+
+    derive_mutation TestAssignParentToField, :user,
+      as: :assign_parent,
+      assign_parent_to_field: :current_user
 
     derive_query GetUserFriends, list_of(:user),
       as: :friends,
