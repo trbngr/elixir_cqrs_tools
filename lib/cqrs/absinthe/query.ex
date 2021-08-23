@@ -6,6 +6,7 @@ if Code.ensure_loaded?(Absinthe) do
     def create_connection_query(query_module, returns, opts) do
       function_name = BoundedContext.__function_name__(query_module, opts)
       query_args = create_query_args(query_module, opts)
+      description = query_module.__simple_moduledoc__()
 
       opts =
         :cqrs_tools
@@ -19,6 +20,7 @@ if Code.ensure_loaded?(Absinthe) do
 
         connection field unquote(function_name), node_type: unquote(returns) do
           unquote_splicing(query_args)
+          description unquote(description)
 
           Middleware.before_resolve(unquote(query_module), unquote(opts))
 
@@ -54,12 +56,14 @@ if Code.ensure_loaded?(Absinthe) do
     def create_query(query_module, returns, opts) do
       function_name = BoundedContext.__function_name__(query_module, opts)
       query_args = create_query_args(query_module, opts)
+      description = query_module.__simple_moduledoc__()
 
       quote do
         require Middleware
 
         field unquote(function_name), unquote(returns) do
           unquote_splicing(query_args)
+          description unquote(description)
 
           Middleware.before_resolve(unquote(query_module), unquote(opts))
 

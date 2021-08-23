@@ -88,6 +88,7 @@ defmodule Cqrs.Query do
       Module.register_attribute(__MODULE__, :filters, accumulate: true)
       Module.register_attribute(__MODULE__, :options, accumulate: true)
       Module.register_attribute(__MODULE__, :bindings, accumulate: true)
+      Module.register_attribute(__MODULE__, :simple_moduledoc, accumulate: false)
       Module.register_attribute(__MODULE__, :required_filters, accumulate: true)
       Module.put_attribute(__MODULE__, :require_all_filters, unquote(require_all_filters))
 
@@ -125,6 +126,7 @@ defmodule Cqrs.Query do
       Module.delete_attribute(__MODULE__, :bindings)
       Module.delete_attribute(__MODULE__, :option_docs)
       Module.delete_attribute(__MODULE__, :filter_docs)
+      Module.delete_attribute(__MODULE__, :simple_moduledoc)
       Module.delete_attribute(__MODULE__, :required_filters)
       Module.delete_attribute(__MODULE__, :require_all_filters)
     end
@@ -135,6 +137,7 @@ defmodule Cqrs.Query do
       @name __MODULE__ |> Module.split() |> Enum.reverse() |> hd() |> to_string()
 
       def __filters__, do: @filters
+      def __simple_moduledoc__, do: @simple_moduledoc
       def __required_filters__, do: @required_filters
       def __module_docs__, do: @moduledoc
       def __query__, do: __MODULE__
@@ -145,6 +148,11 @@ defmodule Cqrs.Query do
   defmacro __module_docs__ do
     quote do
       require Documentation
+
+      case Module.get_attribute(__MODULE__, :moduledoc) do
+        {_, doc} -> @simple_moduledoc String.trim(doc)
+        _ -> @simple_moduledoc nil
+      end
 
       moduledoc = @moduledoc || ""
       @filter_docs Documentation.field_docs("Filters", @filters, @required_filters)

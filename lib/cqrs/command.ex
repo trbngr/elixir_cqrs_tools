@@ -165,6 +165,7 @@ defmodule Cqrs.Command do
       Module.register_attribute(__MODULE__, :options, accumulate: true)
       Module.register_attribute(__MODULE__, :schema_fields, accumulate: true)
       Module.register_attribute(__MODULE__, :required_fields, accumulate: true)
+      Module.register_attribute(__MODULE__, :simple_moduledoc, accumulate: false)
 
       require Cqrs.Options
 
@@ -209,6 +210,7 @@ defmodule Cqrs.Command do
       Module.delete_attribute(__MODULE__, :option_docs)
       Module.delete_attribute(__MODULE__, :schema_fields)
       Module.delete_attribute(__MODULE__, :required_fields)
+      Module.delete_attribute(__MODULE__, :simple_moduledoc)
       Module.delete_attribute(__MODULE__, :require_all_fields)
       Module.delete_attribute(__MODULE__, :default_event_values)
       Module.delete_attribute(__MODULE__, :create_jason_encoders)
@@ -253,6 +255,7 @@ defmodule Cqrs.Command do
     quote do
       @name __MODULE__ |> Module.split() |> Enum.reverse() |> hd() |> to_string()
 
+      def __simple_moduledoc__, do: @simple_moduledoc
       def __fields__, do: @schema_fields
       def __required_fields__, do: @required_fields
       def __module_docs__, do: @moduledoc
@@ -264,6 +267,11 @@ defmodule Cqrs.Command do
   defmacro __module_docs__ do
     quote do
       require Documentation
+
+      case Module.get_attribute(__MODULE__, :moduledoc) do
+        {_, doc} -> @simple_moduledoc String.trim(doc)
+        _ -> @simple_moduledoc nil
+      end
 
       moduledoc = @moduledoc || ""
       @field_docs Documentation.field_docs("Fields", @schema_fields, @required_fields)

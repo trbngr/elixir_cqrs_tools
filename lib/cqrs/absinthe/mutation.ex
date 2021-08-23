@@ -28,12 +28,14 @@ if Code.ensure_loaded?(Absinthe) do
     def create_mutatation(command_module, returns, opts) do
       function_name = BoundedContext.__function_name__(command_module, opts)
       args = create_mutatation_args(command_module, function_name, opts)
+      description = command_module.__simple_moduledoc__()
 
       quote do
         require Middleware
 
         field unquote(function_name), unquote(returns) do
           unquote_splicing(args)
+          description unquote(description)
 
           Middleware.before_resolve(unquote(command_module), unquote(opts))
 
