@@ -33,7 +33,7 @@ if Code.ensure_loaded?(Absinthe) do
 
             derive_query GetUserFriends, list_of(:user),
               as: :friends,
-              filters_from_parent: [user_id: :id]
+              parent_mappings: [user_id: & &1.id]
           end
 
           object :user_queries do
@@ -84,7 +84,8 @@ if Code.ensure_loaded?(Absinthe) do
     * `:except` - Create filters for all except those listed
     * `:before_resolve` - [Absinthe Middleware](`Absinthe.Middleware`) to run before the resolver.
     * `:after_resolve` - [Absinthe Middleware](`Absinthe.Middleware`) to run after the resolver.
-    * `:filters_from_parent` - A keyword list of query filters to parent fields. See example.
+    * `:parent_mappings` - A keyword list of query filters to functions that receive the field's parent object as an argument.
+    * `:filter_transforms` - A keyword list of query filters to functions that receive the filter's current value as an argument.
     """
     defmacro derive_query(query_module, return_type, opts \\ []) do
       opts = Macro.escape(opts)
@@ -144,7 +145,8 @@ if Code.ensure_loaded?(Absinthe) do
       * If `true`, an `input_object` for the [Command](`Cqrs.Command`) is expected to exist. See `derive_mutation_input/2`.
     * `:before_resolve` - [Absinthe Middleware](`Absinthe.Middleware`) to run before the resolver.
     * `:after_resolve` - [Absinthe Middleware](`Absinthe.Middleware`) to run after the resolver.
-    * `:assign_parent_to_field` - If declared, will assign the parent object to the command field defined
+    * `:parent_mappings` - A keyword list of command fields to functions that receive the field's parent object as an argument.
+    * `:field_transforms` - A keyword list of command fields to functions that receive the field's current value as an argument.
 
     """
     defmacro derive_mutation(command_module, return_type, opts \\ []) do

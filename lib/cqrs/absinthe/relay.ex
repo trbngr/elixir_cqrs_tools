@@ -29,7 +29,8 @@ if Code.ensure_loaded?(Absinthe.Relay) do
     * `:arg_types` - A list of filter names to absinthe types. See example.
     * `:before_resolve` - [Absinthe Middleware](`Absinthe.Middleware`) to run before the resolver.
     * `:after_resolve` - [Absinthe Middleware](`Absinthe.Middleware`) to run after the resolver.
-    * `:filters_from_parent` - A keyword list of query filters to parent fields. See example.
+    * `:parent_mappings` - A keyword list of query filters to functions that receive the field's parent object as an argument.
+    * `:filter_transforms` - A keyword list of query filters to functions that receive the filter's current value as an argument.
 
     ## Example
 
@@ -56,7 +57,7 @@ if Code.ensure_loaded?(Absinthe.Relay) do
             derive_connection GetUserFriends, :user,
               as: :friends,
               repo: Example.Repo,
-              filters_from_parent: [user_id: :id]
+              parent_mappings: [user_id: fn %{id: id} -> id end]
           end
 
           connection(node_type: :user)

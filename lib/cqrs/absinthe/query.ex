@@ -1,7 +1,13 @@
 if Code.ensure_loaded?(Absinthe) do
   defmodule Cqrs.Absinthe.Query do
     @moduledoc false
-    alias Cqrs.{BoundedContext, Absinthe.Args, Absinthe.Metadata, Absinthe.Middleware, Absinthe.Query}
+    alias Cqrs.{
+      BoundedContext,
+      Absinthe.Args,
+      Absinthe.Metadata,
+      Absinthe.Middleware,
+      Absinthe.FieldMapping
+    }
 
     def create_connection_query(query_module, returns, opts) do
       function_name = BoundedContext.__function_name__(query_module, opts)
@@ -28,9 +34,9 @@ if Code.ensure_loaded?(Absinthe) do
             alias Absinthe.Relay.Connection
 
             args =
-              unquote(query_module)
-              |> Query.read_filters_from_parent(parent, unquote(opts))
-              |> Map.merge(args)
+              args
+              |> FieldMapping.resolve_parent_mappings(unquote(query_module), parent, unquote(opts))
+              |> FieldMapping.run_field_transformations(unquote(query_module), unquote(opts))
 
             opts = Metadata.merge(resolution, unquote(opts))
 
@@ -74,9 +80,9 @@ if Code.ensure_loaded?(Absinthe) do
               |> Keyword.put(:tag?, true)
 
             args =
-              unquote(query_module)
-              |> Query.read_filters_from_parent(parent, unquote(opts))
-              |> Map.merge(args)
+              args
+              |> FieldMapping.resolve_parent_mappings(unquote(query_module), parent, unquote(opts))
+              |> FieldMapping.run_field_transformations(unquote(query_module), unquote(opts))
 
             case BoundedContext.__execute_query__(unquote(query_module), args, opts) do
               {:ok, result} ->
@@ -99,53 +105,14 @@ if Code.ensure_loaded?(Absinthe) do
     end
 
     defp create_query_args(query_module, opts) do
-      filters_from_parent = opts |> filters_from_parent() |> Keyword.keys()
-
       query_module.__filters__()
-      |> Enum.reject(fn {filter, _, _} -> Enum.member?(filters_from_parent, filter) end)
+      |> FieldMapping.reject_parent_mappings(opts)
       |> Args.extract_args(opts)
       |> Enum.map(fn {name, absinthe_type, required, opts} ->
         case required do
           true -> quote do: arg(unquote(name), non_null(unquote(absinthe_type)), unquote(opts))
           false -> quote do: arg(unquote(name), unquote(absinthe_type), unquote(opts))
         end
-      end)
-    end
-
-    defp filters_from_parent(opts) do
-      Keyword.get(opts, :filters_from_parent, [])
-    end
-
-    require Logger
-
-    def read_filters_from_parent(_query_module, nil, _opts), do: %{}
-
-    def read_filters_from_parent(query_module, parent, opts) do
-      parent_keys = (Map.keys(parent) -- [:__meta__, :__struct__]) |> Enum.join(", ")
-
-      Logger.log(:debug, [
-        "QUERY FILTER FROM PARENT query=",
-        inspect(query_module),
-        " parent keys=[",
-        parent_keys,
-        "]"
-      ])
-
-      opts
-      |> filters_from_parent()
-      |> Enum.reduce(%{}, fn {filter, parent_field}, acc ->
-        value = Map.get(parent, parent_field)
-
-        Logger.log(:debug, [
-          "SETTING FILTER FROM PARENT filter=",
-          inspect(filter),
-          " parent=",
-          inspect(parent_field),
-          " value=",
-          inspect(value)
-        ])
-
-        Map.put(acc, filter, value)
       end)
     end
   end

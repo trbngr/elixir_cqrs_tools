@@ -67,15 +67,15 @@ defmodule UserTypes do
 
     derive_mutation TestAssignParentToField, :user,
       as: :assign_parent,
-      assign_parent_to_field: :current_user
+      parent_mappings: [current_user: &Function.identity/1]
 
     derive_query GetUserFriends, list_of(:user),
       as: :friends,
-      filters_from_parent: [user_id: :id]
+      parent_mappings: [user_id: & &1.id]
 
     derive_connection GetUserFriends, :user,
       as: :friends_connection,
-      filters_from_parent: [user_id: :id],
+      parent_mappings: [user_id: & &1.id],
       repo: TempRepo,
       repo_fun: :all_friends
   end
