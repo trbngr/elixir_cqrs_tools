@@ -12,7 +12,7 @@ if Code.ensure_loaded?(Absinthe.Relay) do
 
     defmacro __using__(_) do
       quote do
-        import Cqrs.Absinthe.Relay, only: [derive_connection: 3]
+        import Cqrs.Absinthe.Relay, only: [derive_connection: 3, connection_with_total_count: 1]
       end
     end
 
@@ -90,6 +90,32 @@ if Code.ensure_loaded?(Absinthe.Relay) do
         end
 
       Module.eval_quoted(__CALLER__, field)
+    end
+
+    @doc """
+    Creates a connection type for the node_type.
+    """
+    defmacro connection_with_total_count(node_type: node_type) do
+      quote do
+        require Logger
+
+        connection node_type: unquote(node_type) do
+          field :total_count, :integer do
+            resolve fn
+              %{connection_query: query, repo: repo}, _args, _res ->
+                total_count = repo.aggregate(query, :count, :id)
+                {:ok, total_count}
+
+              _connection, _args, _res ->
+                Logger.warn("Requested total_count on a connection that was not created by cqrs_tools.")
+                {:ok, nil}
+            end
+          end
+
+          edge do
+          end
+        end
+      end
     end
   end
 end

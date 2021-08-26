@@ -50,7 +50,14 @@ if Code.ensure_loaded?(Absinthe) do
                   apply(unquote(repo), fun, [args])
                 end
 
-                Connection.from_query(query, repo_fun, args)
+                with {:ok, result} <- Connection.from_query(query, repo_fun, args) do
+                  result =
+                    result
+                    |> Map.put(:repo, unquote(repo))
+                    |> Map.put(:connection_query, query)
+
+                  {:ok, result}
+                end
             end
           end)
 
