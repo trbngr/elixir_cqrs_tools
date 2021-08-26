@@ -7,12 +7,16 @@ if Code.ensure_loaded?(Absinthe.Relay) do
 
         config :cqrs_tools, :absinthe_relay, repo: Example.Repo
     """
+
+    require Logger
+
     alias Cqrs.Guards
-    alias Cqrs.Absinthe.Query
+    alias Cqrs.Absinthe.{Relay, Query}
 
     defmacro __using__(_) do
       quote do
-        import Cqrs.Absinthe.Relay, only: [derive_connection: 3, connection_with_total_count: 1]
+        import Cqrs.Absinthe.Relay,
+          only: [derive_connection: 3, connection_with_total_count: 1, connections_with_total_count: 1]
       end
     end
 
@@ -92,30 +96,39 @@ if Code.ensure_loaded?(Absinthe.Relay) do
       Module.eval_quoted(__CALLER__, field)
     end
 
-    @doc """
-    Creates a connection type for the node_type.
-    """
-    defmacro connection_with_total_count(node_type: node_type) do
+    def define_connection_with_total_count(node_type) do
       quote do
-        require Logger
-
         connection node_type: unquote(node_type) do
-          field :total_count, :integer do
-            resolve fn
-              %{connection_query: query, repo: repo}, _args, _res ->
-                total_count = repo.aggregate(query, :count, :id)
-                {:ok, total_count}
-
-              _connection, _args, _res ->
-                Logger.warn("Requested total_count on a connection that was not created by cqrs_tools.")
-                {:ok, nil}
-            end
-          end
+          field :total_count, :integer, resolve: &Relay.resolve_total_count/3
 
           edge do
           end
         end
       end
+    end
+
+    def resolve_total_count(%{connection_query: query, repo: repo}, _args, _res) do
+      total_count = repo.aggregate(query, :count, :id)
+      {:ok, total_count}
+    end
+
+    def resolve_total_count(_connection, _args, _res) do
+      Logger.warn("Requested total_count on a connection that was not created by cqrs_tools.")
+      {:ok, nil}
+    end
+
+    @doc """
+    Creates a connection type for each node_type. The connection will contain a `total_count` field.
+    """
+    defmacro connection_with_total_count(node_type) when is_atom(node_type) do
+      define_connection_with_total_count(node_type)
+    end
+
+    @doc """
+    Creates a connection type for each node_type. Each connection will contain a `total_count` field.
+    """
+    defmacro connections_with_total_count(node_types) when is_list(node_types) do
+      Enum.map(node_types, &define_connection_with_total_count/1)
     end
   end
 end
