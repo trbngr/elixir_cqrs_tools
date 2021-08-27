@@ -14,11 +14,13 @@ if Code.ensure_loaded?(Absinthe) do
 
       Enum.reduce(field_mappings, attrs, fn
         {field_name, resolver_fun}, acc when is_function(resolver_fun, 1) ->
-          Map.put(acc, field_name, resolver_fun.(parent))
+          value = resolver_fun.(parent)
+          Logger.debug("[cqrs_tools] Resolved #{inspect(module)}.#{field_name} from parent: #{value}")
+          Map.put(acc, field_name, value)
 
         {field_name, _resolver_fun}, acc ->
           Logger.warn(
-            "#{inspect(module)} - Invalid Field Mapping for #{field_name}. Expected a function with an arity of 1"
+            "[cqrs_tools] Invalid Field Mapping for #{inspect(module)}.#{field_name}. Expected a function with an arity of 1"
           )
 
           acc
@@ -30,11 +32,15 @@ if Code.ensure_loaded?(Absinthe) do
 
       Enum.reduce(field_transformations, attrs, fn
         {field_name, transform_fun}, acc when is_function(transform_fun, 1) ->
-          Map.update(acc, field_name, nil, transform_fun)
+          Map.update(acc, field_name, nil, fn source ->
+            transformed = transform_fun.(source)
+            Logger.debug("[cqrs_tools] Transformed #{inspect(module)}.#{field_name}: #{source} -> #{transformed}")
+            transformed
+          end)
 
         {field_name, _transform_fun}, acc ->
           Logger.warn(
-            "#{inspect(module)} - Invalid Field Transformation for #{field_name}. Expected a function with an arity of 1"
+            "[cqrs_tools] Invalid Field Transformation for #{inspect(module)}.#{field_name}. Expected a function with an arity of 1"
           )
 
           acc
