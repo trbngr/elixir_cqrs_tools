@@ -35,7 +35,7 @@ if Code.ensure_loaded?(Absinthe) do
 
             args =
               args
-              |> FieldMapping.resolve_parent_mappings(unquote(query_module), parent, unquote(opts))
+              |> FieldMapping.resolve_parent_mappings(unquote(query_module), parent, args, unquote(opts))
               |> FieldMapping.run_field_transformations(unquote(query_module), unquote(opts))
 
             opts = Metadata.merge(resolution, unquote(opts))
@@ -53,6 +53,7 @@ if Code.ensure_loaded?(Absinthe) do
                 with {:ok, result} <- Connection.from_query(query, repo_fun, args) do
                   result =
                     result
+                    |> Map.put(:args, args)
                     |> Map.put(:repo, unquote(repo))
                     |> Map.put(:connection_query, query)
 
@@ -88,7 +89,7 @@ if Code.ensure_loaded?(Absinthe) do
 
             args =
               args
-              |> FieldMapping.resolve_parent_mappings(unquote(query_module), parent, unquote(opts))
+              |> FieldMapping.resolve_parent_mappings(unquote(query_module), parent, args, unquote(opts))
               |> FieldMapping.run_field_transformations(unquote(query_module), unquote(opts))
 
             case BoundedContext.__execute_query__(unquote(query_module), args, opts) do

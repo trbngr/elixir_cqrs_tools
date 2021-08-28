@@ -24,6 +24,7 @@ locals_without_parens = [
   derive_mutation: 3,
   derive_enum: 2,
   connection_with_total_count: 1,
+  connection_with_total_count: 2,
   connections_with_total_count: 1
 ]
 

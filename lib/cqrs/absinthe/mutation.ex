@@ -50,7 +50,7 @@ if Code.ensure_loaded?(Absinthe) do
             attrs =
               args
               |> Map.get(:input, args)
-              |> FieldMapping.resolve_parent_mappings(unquote(command_module), parent, unquote(opts))
+              |> FieldMapping.resolve_parent_mappings(unquote(command_module), parent, args, unquote(opts))
               |> FieldMapping.run_field_transformations(unquote(command_module), unquote(opts))
 
             opts =

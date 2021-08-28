@@ -16,7 +16,12 @@ if Code.ensure_loaded?(Absinthe.Relay) do
     defmacro __using__(_) do
       quote do
         import Cqrs.Absinthe.Relay,
-          only: [derive_connection: 3, connection_with_total_count: 1, connections_with_total_count: 1]
+          only: [
+            derive_connection: 3,
+            connection_with_total_count: 1,
+            connection_with_total_count: 2,
+            connections_with_total_count: 1
+          ]
       end
     end
 
@@ -96,10 +101,13 @@ if Code.ensure_loaded?(Absinthe.Relay) do
       Module.eval_quoted(__CALLER__, field)
     end
 
-    def define_connection_with_total_count(node_type) do
+    def define_connection_with_total_count(node_type, opts \\ []) do
+      fields = Keyword.get(opts, :do)
+
       quote do
         connection node_type: unquote(node_type) do
           field :total_count, :integer, resolve: &Relay.resolve_total_count/3
+          unquote(fields)
 
           edge do
           end
@@ -120,8 +128,8 @@ if Code.ensure_loaded?(Absinthe.Relay) do
     @doc """
     Creates a connection type for each node_type. The connection will contain a `total_count` field.
     """
-    defmacro connection_with_total_count(node_type) when is_atom(node_type) do
-      define_connection_with_total_count(node_type)
+    defmacro connection_with_total_count(node_type, opts \\ []) when is_atom(node_type) do
+      define_connection_with_total_count(node_type, opts)
     end
 
     @doc """
