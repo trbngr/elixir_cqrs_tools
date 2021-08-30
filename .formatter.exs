@@ -25,7 +25,11 @@ locals_without_parens = [
   derive_enum: 2,
   connection_with_total_count: 1,
   connection_with_total_count: 2,
-  connections_with_total_count: 1
+  connections_with_total_count: 1,
+  derive_object: 2,
+  derive_object: 3,
+  derive_input_object: 2,
+  derive_input_object: 3
 ]
 
 [

@@ -12,13 +12,6 @@ defmodule Cqrs.InvalidQueryError do
     do: "#{module |> Module.split() |> Enum.join(".")} is not a Cqrs.Query"
 end
 
-defmodule Cqrs.InvalidRouterError do
-  defexception [:router]
-
-  def message(%{router: module}),
-    do: "#{module |> Module.split() |> Enum.join(".")} is not a Commanded.Commands.Router"
-end
-
 defmodule Cqrs.InvalidDispatcherError do
   defexception [:dispatcher]
 
@@ -37,6 +30,16 @@ defmodule Cqrs.QueryError do
 end
 
 defmodule Cqrs.CommandError do
+  defexception [:errors]
+
+  def message(%{errors: errors}) do
+    errors
+    |> Enum.flat_map(fn {key, messages} -> Enum.map(messages, fn msg -> "#{key} #{msg}" end) end)
+    |> Enum.join("\n")
+  end
+end
+
+defmodule Cqrs.ValueObjectError do
   defexception [:errors]
 
   def message(%{errors: errors}) do

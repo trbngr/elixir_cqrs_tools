@@ -67,7 +67,7 @@ if Code.ensure_loaded?(Absinthe) do
 
     defp absinthe_type({name, type, _}, opts) do
       type = get_named_arg_type_mapping(name, opts) || type
-      quote(do: unquote(type))
+      quote do: unquote(type)
     end
 
     defp get_configured_type_mapping(type) do
