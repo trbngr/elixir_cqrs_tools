@@ -1,7 +1,14 @@
 if Code.ensure_loaded?(Absinthe) do
   defmodule Cqrs.Absinthe.Mutation do
     @moduledoc false
-    alias Cqrs.{BoundedContext, Absinthe.Args, Absinthe.Metadata, Absinthe.Errors}
+    alias Cqrs.{
+      BoundedContext,
+      Absinthe.Args,
+      Absinthe.Metadata,
+      Absinthe.Errors,
+      Absinthe.Middleware,
+      Absinthe.FieldMapping
+    }
 
     def create_input_object(command_module, opts) do
       function_name = BoundedContext.__function_name__(command_module, opts)
@@ -28,13 +35,23 @@ if Code.ensure_loaded?(Absinthe) do
     def create_mutatation(command_module, returns, opts) do
       function_name = BoundedContext.__function_name__(command_module, opts)
       args = create_mutatation_args(command_module, function_name, opts)
+      description = command_module.__simple_moduledoc__()
 
       quote do
+        require Middleware
+
         field unquote(function_name), unquote(returns) do
           unquote_splicing(args)
+          description unquote(description)
 
-          resolve(fn args, resolution ->
-            attrs = Map.get(args, :input, args)
+          Middleware.before_resolve(unquote(command_module), unquote(opts))
+
+          resolve(fn parent, args, resolution ->
+            attrs =
+              args
+              |> Map.get(:input, args)
+              |> FieldMapping.resolve_parent_mappings(unquote(command_module), parent, args, unquote(opts))
+              |> FieldMapping.run_field_transformations(unquote(command_module), unquote(opts))
 
             opts =
               resolution
@@ -43,6 +60,8 @@ if Code.ensure_loaded?(Absinthe) do
 
             BoundedContext.__dispatch_command__(unquote(command_module), attrs, opts)
           end)
+
+          Middleware.after_resolve(unquote(command_module), unquote(opts))
         end
       end
     end
@@ -62,6 +81,7 @@ if Code.ensure_loaded?(Absinthe) do
 
     defp create_mutatation_args(command_module, opts) do
       command_module.__fields__()
+      |> FieldMapping.reject_parent_mappings(opts)
       |> Args.extract_args(opts)
       |> Enum.map(fn {name, absinthe_type, required, opts} ->
         case required do

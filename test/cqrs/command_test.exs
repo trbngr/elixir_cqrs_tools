@@ -8,6 +8,8 @@ defmodule Cqrs.CommandTest do
 
     field :name, :string
 
+    derive_event CommandOneHappened
+
     @impl true
     def handle_validate(changeset, opts) do
       send(self(), {:handle_validate, changeset, opts})
@@ -21,7 +23,8 @@ defmodule Cqrs.CommandTest do
     end
 
     @impl true
-    def before_dispatch(command, opts) do
+    def before_dispatch(%{discarded_fields: extra_data} = command, opts) do
+      send(self(), {:discarded, extra_data})
       send(self(), {:before_dispatch, command, opts})
 
       if Keyword.get(opts, :return_error, false),
@@ -101,6 +104,22 @@ defmodule Cqrs.CommandTest do
 
       assert_receive({:handle_dispatch, %CommandOne{name: "chris"}, opts})
       assert :a == Keyword.get(opts, :value)
+    end
+  end
+
+  describe "discarded_fields" do
+    test "preserves extra data" do
+      assert {:ok, :dispatched} =
+               CommandOne.new(name: "chris", company: "oforce", perform_work: true, individual_lksjd: "lkajdsf")
+               |> CommandOne.dispatch()
+
+      assert_receive({:discarded, %{company: "oforce"}})
+    end
+
+    test "is absent from event" do
+      refute %Cqrs.CommandTest.CommandOneHappened{}
+             |> Map.keys()
+             |> Enum.member?(:discarded)
     end
   end
 end

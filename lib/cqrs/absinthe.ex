@@ -23,13 +23,17 @@ if Code.ensure_loaded?(Absinthe) do
 
           import ExampleApi.Resolvers.UserResolver
 
-          derive_enum :user_status, ListUsers, :status
+          derive_enum :user_status, {ListUsers, :status}
 
           object :user do
             field :id, :id
             field :name, :string
             field :email, :string
             field :status, :user_status
+
+            derive_query GetUserFriends, list_of(:user),
+              as: :friends,
+              parent_mappings: [user_id: & &1.id]
           end
 
           object :user_queries do
@@ -57,8 +61,6 @@ if Code.ensure_loaded?(Absinthe) do
 
     defmacro __using__(_) do
       quote do
-        use Absinthe.Schema.Notation
-
         import Cqrs.Absinthe,
           only: [
             derive_mutation_input: 1,
@@ -67,7 +69,7 @@ if Code.ensure_loaded?(Absinthe) do
             derive_mutation: 3,
             derive_query: 2,
             derive_query: 3,
-            derive_enum: 3,
+            derive_enum: 2,
             derive_object: 2,
             derive_object: 3,
             derive_input_object: 2,
@@ -84,6 +86,10 @@ if Code.ensure_loaded?(Absinthe) do
     * `:as` - The name to use for the query. Defaults to the query_module name snake_cased.
     * `:only` - Use only the filters listed
     * `:except` - Create filters for all except those listed
+    * `:before_resolve` - [Absinthe Middleware](`Absinthe.Middleware`) to run before the resolver.
+    * `:after_resolve` - [Absinthe Middleware](`Absinthe.Middleware`) to run after the resolver.
+    * `:parent_mappings` - A keyword list of query filters to functions that receive the field's parent object as an argument.
+    * `:filter_transforms` - A keyword list of query filters to functions that receive the filter's current value as an argument.
     """
     defmacro derive_query(query_module, return_type, opts \\ []) do
       opts = Macro.escape(opts)
@@ -141,6 +147,10 @@ if Code.ensure_loaded?(Absinthe) do
       * If `true`, one arg with the name of `:input` will be generated.
 
       * If `true`, an `input_object` for the [Command](`Cqrs.Command`) is expected to exist. See `derive_mutation_input/2`.
+    * `:before_resolve` - [Absinthe Middleware](`Absinthe.Middleware`) to run before the resolver.
+    * `:after_resolve` - [Absinthe Middleware](`Absinthe.Middleware`) to run after the resolver.
+    * `:parent_mappings` - A keyword list of command fields to functions that receive the field's parent object as an argument.
+    * `:field_transforms` - A keyword list of command fields to functions that receive the field's current value as an argument.
 
     """
     defmacro derive_mutation(command_module, return_type, opts \\ []) do
@@ -169,7 +179,7 @@ if Code.ensure_loaded?(Absinthe) do
     @doc """
     Defines an [Absinthe Enum](`Absinthe.Type.Enum`) from a [Command](`Cqrs.Command`), [Domain Event](`Cqrs.DomainEvent`), or [Ecto Schema](`Ecto.Schema`).
     """
-    defmacro derive_enum(enum_name, enum_source_module, field_name) do
+    defmacro derive_enum(enum_name, {enum_source_module, field_name}) do
       enum =
         quote location: :keep do
           Cqrs.Absinthe.ensure_is_schema!(unquote(enum_source_module))

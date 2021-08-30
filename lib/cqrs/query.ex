@@ -79,7 +79,7 @@ defmodule Cqrs.Query do
   @callback handle_execute(query(), opts()) :: {:error, query()} | {:error, any()} | any()
   @callback handle_execute!(query(), opts()) :: any()
 
-  alias Cqrs.{Documentation, Query, QueryError, Options, InvalidValuesError}
+  alias Cqrs.{Documentation, Query, QueryError, Metadata, Options, InvalidValuesError}
 
   defmacro __using__(opts \\ []) do
     require_all_filters = Keyword.get(opts, :require_all_filters, false)
@@ -88,6 +88,7 @@ defmodule Cqrs.Query do
       Module.register_attribute(__MODULE__, :filters, accumulate: true)
       Module.register_attribute(__MODULE__, :options, accumulate: true)
       Module.register_attribute(__MODULE__, :bindings, accumulate: true)
+      Module.register_attribute(__MODULE__, :simple_moduledoc, accumulate: false)
       Module.register_attribute(__MODULE__, :required_filters, accumulate: true)
       Module.put_attribute(__MODULE__, :require_all_filters, unquote(require_all_filters))
 
@@ -125,6 +126,7 @@ defmodule Cqrs.Query do
       Module.delete_attribute(__MODULE__, :bindings)
       Module.delete_attribute(__MODULE__, :option_docs)
       Module.delete_attribute(__MODULE__, :filter_docs)
+      Module.delete_attribute(__MODULE__, :simple_moduledoc)
       Module.delete_attribute(__MODULE__, :required_filters)
       Module.delete_attribute(__MODULE__, :require_all_filters)
     end
@@ -135,7 +137,7 @@ defmodule Cqrs.Query do
       @name __MODULE__ |> Module.split() |> Enum.reverse() |> hd() |> to_string()
 
       def __filters__, do: @filters
-      def __fields__, do: @filters
+      def __simple_moduledoc__, do: @simple_moduledoc
       def __required_filters__, do: @required_filters
       def __module_docs__, do: @moduledoc
       def __query__, do: __MODULE__
@@ -146,6 +148,11 @@ defmodule Cqrs.Query do
   defmacro __module_docs__ do
     quote do
       require Documentation
+
+      case Module.get_attribute(__MODULE__, :moduledoc) do
+        {_, doc} -> @simple_moduledoc String.trim(doc)
+        _ -> @simple_moduledoc nil
+      end
 
       moduledoc = @moduledoc || ""
       @filter_docs Documentation.field_docs("Filters", @filters, @required_filters)
@@ -167,6 +174,9 @@ defmodule Cqrs.Query do
       @primary_key false
       embedded_schema do
         Enum.map(@filters, fn
+          {name, {:array, :enum}, opts} ->
+            Ecto.Schema.field(name, {:array, Ecto.Enum}, opts)
+
           {name, :enum, opts} ->
             Ecto.Schema.field(name, Ecto.Enum, opts)
 
@@ -274,6 +284,7 @@ defmodule Cqrs.Query do
   def __new__(mod, filters, required_filters, opts) when is_list(opts) do
     fields = mod.__schema__(:fields)
 
+    opts = Metadata.put_default_metadata(opts)
     filters = normalize(mod, filters)
 
     filters =
@@ -335,6 +346,7 @@ defmodule Cqrs.Query do
   def execute!(mod, query, opts), do: do_execute(mod, :handle_execute!, query, opts)
 
   defp do_execute(mod, execute_fun, query, opts) do
+    opts = Metadata.put_default_metadata(opts)
     tag? = Keyword.get(opts, :tag?)
 
     mod

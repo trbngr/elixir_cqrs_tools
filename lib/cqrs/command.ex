@@ -1,5 +1,5 @@
 defmodule Cqrs.Command do
-  alias Cqrs.{Command, CommandError, Documentation, DomainEvent, Guards, Options, InvalidValuesError}
+  alias Cqrs.{Command, CommandError, Documentation, DomainEvent, Guards, Metadata, Options, InvalidValuesError}
 
   @moduledoc """
   The `Command` macro allows you to define a command that encapsulates a struct definition,
@@ -166,6 +166,7 @@ defmodule Cqrs.Command do
       Module.register_attribute(__MODULE__, :schema_fields, accumulate: true)
       Module.register_attribute(__MODULE__, :schema_value_objects, accumulate: true)
       Module.register_attribute(__MODULE__, :required_fields, accumulate: true)
+      Module.register_attribute(__MODULE__, :simple_moduledoc, accumulate: false)
 
       require Cqrs.Options
 
@@ -210,6 +211,7 @@ defmodule Cqrs.Command do
       Module.delete_attribute(__MODULE__, :option_docs)
       Module.delete_attribute(__MODULE__, :schema_fields)
       Module.delete_attribute(__MODULE__, :required_fields)
+      Module.delete_attribute(__MODULE__, :simple_moduledoc)
       Module.delete_attribute(__MODULE__, :require_all_fields)
       Module.delete_attribute(__MODULE__, :default_event_values)
       Module.delete_attribute(__MODULE__, :schema_value_objects)
@@ -232,8 +234,12 @@ defmodule Cqrs.Command do
       @primary_key false
       embedded_schema do
         Ecto.Schema.field(:created_at, :utc_datetime)
+        Ecto.Schema.field(:discarded_fields, :map, virtual: true)
 
         Enum.map(@schema_fields, fn
+          {name, {:array, :enum}, opts} ->
+            Ecto.Schema.field(name, {:array, Ecto.Enum}, opts)
+
           {name, :enum, opts} ->
             Ecto.Schema.field(name, Ecto.Enum, opts)
 
@@ -260,6 +266,7 @@ defmodule Cqrs.Command do
       @name __MODULE__ |> Module.split() |> Enum.reverse() |> hd() |> to_string()
 
       def __fields__, do: @schema_fields ++ @schema_value_objects
+      def __simple_moduledoc__, do: @simple_moduledoc
       def __required_fields__, do: @required_fields
       def __module_docs__, do: @moduledoc
       def __command__, do: __MODULE__
@@ -270,6 +277,11 @@ defmodule Cqrs.Command do
   defmacro __module_docs__ do
     quote do
       require Documentation
+
+      case Module.get_attribute(__MODULE__, :moduledoc) do
+        {_, doc} -> @simple_moduledoc String.trim(doc)
+        _ -> @simple_moduledoc nil
+      end
 
       moduledoc = @moduledoc || ""
       @field_docs Documentation.field_docs("Fields", @schema_fields, @required_fields)
@@ -348,11 +360,15 @@ defmodule Cqrs.Command do
 
     create_event = fn {name, opts, {file, line}} ->
       options =
-        Keyword.update(opts, :with, command_fields, fn fields ->
+        opts
+        |> Keyword.update(:with, command_fields, fn fields ->
           fields
           |> List.wrap()
           |> Kernel.++(command_fields)
           |> Enum.uniq()
+        end)
+        |> Keyword.update(:drop, [:discarded_fields], fn drops ->
+          Enum.uniq([:discarded_fields | List.wrap(drops)])
         end)
 
       domain_event =
@@ -496,6 +512,8 @@ defmodule Cqrs.Command do
       |> normalize(attrs)
       |> mod.before_validate()
 
+    opts = Metadata.put_default_metadata(opts)
+
     mod
     |> __init__(attrs, required_fields, opts)
     |> Changeset.put_change(:created_at, Cqrs.Clock.utc_now(mod))
@@ -516,8 +534,11 @@ defmodule Cqrs.Command do
         |> Changeset.apply_action(:create)
     end
     |> case do
-      {:ok, command} -> {:ok, command}
-      {:error, changeset} -> {:error, format_errors(changeset)}
+      {:ok, command} ->
+        {:ok, Map.put(command, :discarded_fields, discarded_data(mod, attrs))}
+
+      {:error, changeset} ->
+        {:error, format_errors(changeset)}
     end
   end
 
@@ -526,6 +547,11 @@ defmodule Cqrs.Command do
       {:ok, command} -> command
       {:error, errors} -> raise CommandError, errors: errors
     end
+  end
+
+  defp discarded_data(mod, attrs) do
+    fields = mod.__schema__(:fields)
+    Map.drop(attrs, fields)
   end
 
   defp format_errors(changeset) do
@@ -553,6 +579,8 @@ defmodule Cqrs.Command do
   defp normalize_attrs(other), do: other
 
   def __do_dispatch__(mod, %{__struct__: mod} = command, opts) do
+    opts = Metadata.put_default_metadata(opts)
+
     run_dispatch = fn command ->
       tag? = Keyword.get(opts, :tag?)
 

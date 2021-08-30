@@ -170,6 +170,7 @@ and `derive_mutation_input` macros.
 ```elixir
 defmodule UserTypes do
   use Cqrs.Absinthe
+  use Absinthe.Schema.Notation
 
   object :user do
     field :id, :id
@@ -290,6 +291,9 @@ end
 defmodule UserTypes do
   use Cqrs.Absinthe
   use Cqrs.Absinthe.Relay
+
+  use Absinthe.Schema.Notation
+  use Absinthe.Relay.Schema.Notation, :modern
 
   object :user do
     field :id, :id
