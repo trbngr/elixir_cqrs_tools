@@ -7,7 +7,7 @@ defmodule CqrsTools.MixProject do
     [
       app: :cqrs_tools,
       version: @version,
-      elixir: "~> 1.10",
+      elixir: "~> 1.12",
       start_permanent: Mix.env() == :prod,
       elixirc_paths: elixirc_paths(Mix.env()),
       deps: deps(),
