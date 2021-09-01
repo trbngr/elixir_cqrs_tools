@@ -1,5 +1,5 @@
 defmodule Cqrs.Command do
-  alias Cqrs.{Command, CommandError, Documentation, DomainEvent, Guards, Metadata, Options, InvalidValuesError, Input}
+  alias Cqrs.{Command, CommandError, Documentation, DomainEvent, Guards, Metadata, Options, Input}
 
   @moduledoc """
   The `Command` macro allows you to define a command that encapsulates a struct definition,

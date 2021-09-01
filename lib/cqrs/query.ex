@@ -79,7 +79,7 @@ defmodule Cqrs.Query do
   @callback handle_execute(query(), opts()) :: {:error, query()} | {:error, any()} | any()
   @callback handle_execute!(query(), opts()) :: any()
 
-  alias Cqrs.{Documentation, Query, QueryError, Metadata, Options, InvalidValuesError, Input}
+  alias Cqrs.{Documentation, Query, QueryError, Metadata, Options, Input}
 
   defmacro __using__(opts \\ []) do
     require_all_filters = Keyword.get(opts, :require_all_filters, false)
