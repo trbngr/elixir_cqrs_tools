@@ -38,12 +38,16 @@ defmodule Cqrs.Input do
       field_source = mod.__schema__(:field_source, field)
       source_value = Map.get(input, field_source)
 
-      acc
-      |> Map.delete(field_source)
-      |> Map.update(to_string(field), source_value, fn
-        nil -> source_value
-        other -> other
-      end)
+      acc = Map.delete(acc, field_source)
+
+      if Map.has_key?(acc, to_string(field)) do
+        Map.update!(acc, to_string(field), fn
+          nil -> source_value
+          other -> other
+        end)
+      else
+        acc
+      end
     end)
   end
 end
