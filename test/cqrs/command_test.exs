@@ -113,7 +113,7 @@ defmodule Cqrs.CommandTest do
                CommandOne.new(name: "chris", company: "oforce", perform_work: true, individual_lksjd: "lkajdsf")
                |> CommandOne.dispatch()
 
-      assert_receive({:discarded, %{company: "oforce"}})
+      assert_receive({:discarded, %{"company" => "oforce", "individual_lksjd" => "lkajdsf"}})
     end
 
     test "is absent from event" do

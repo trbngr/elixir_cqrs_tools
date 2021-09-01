@@ -79,7 +79,7 @@ defmodule Cqrs.Query do
   @callback handle_execute(query(), opts()) :: {:error, query()} | {:error, any()} | any()
   @callback handle_execute!(query(), opts()) :: any()
 
-  alias Cqrs.{Documentation, Query, QueryError, Metadata, Options, InvalidValuesError}
+  alias Cqrs.{Documentation, Query, QueryError, Metadata, Options, InvalidValuesError, Input}
 
   defmacro __using__(opts \\ []) do
     require_all_filters = Keyword.get(opts, :require_all_filters, false)
@@ -285,7 +285,7 @@ defmodule Cqrs.Query do
     fields = mod.__schema__(:fields)
 
     opts = Metadata.put_default_metadata(opts)
-    filters = normalize(mod, filters)
+    filters = Input.normalize_input(filters, mod)
 
     filters =
       struct(mod)
@@ -329,11 +329,6 @@ defmodule Cqrs.Query do
       end)
     end)
   end
-
-  defp normalize(_mod, values) when is_list(values), do: Enum.into(values, %{})
-  defp normalize(_mod, values) when is_struct(values), do: Map.from_struct(values)
-  defp normalize(_mod, values) when is_map(values), do: values
-  defp normalize(mod, _other), do: raise(InvalidValuesError, module: mod)
 
   @doc false
   def execute(mod, {:ok, query}, opts), do: do_execute(mod, :handle_execute, query, opts)

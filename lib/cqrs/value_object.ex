@@ -25,7 +25,7 @@ defmodule Cqrs.ValueObject do
   """
   @callback after_validate(struct()) :: struct()
 
-  alias Cqrs.{Documentation, InvalidValuesError, ValueObject, ValueObjectError}
+  alias Cqrs.{Documentation, InvalidValuesError, ValueObject, ValueObjectError, Input}
 
   defmacro __using__(opts \\ []) do
     require_all_fields = Keyword.get(opts, :require_all_fields, true)
@@ -198,6 +198,8 @@ defmodule Cqrs.ValueObject do
   end
 
   def __new__(mod, attrs, required_fields, opts) when is_list(opts) do
+    attrs = Input.normalize_input(attrs, mod)
+
     mod
     |> __init__(attrs, required_fields, opts)
     |> case do
@@ -209,6 +211,7 @@ defmodule Cqrs.ValueObject do
           changeset
           |> Changeset.apply_changes()
           |> mod.after_validate()
+          |> Input.normalize_input(mod)
 
         changeset2 = __init__(mod, attrs, required_fields, opts)
 

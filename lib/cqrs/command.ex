@@ -1,5 +1,5 @@
 defmodule Cqrs.Command do
-  alias Cqrs.{Command, CommandError, Documentation, DomainEvent, Guards, Metadata, Options, InvalidValuesError}
+  alias Cqrs.{Command, CommandError, Documentation, DomainEvent, Guards, Metadata, Options, InvalidValuesError, Input}
 
   @moduledoc """
   The `Command` macro allows you to define a command that encapsulates a struct definition,
@@ -490,11 +490,6 @@ defmodule Cqrs.Command do
     fields = mod.__schema__(:fields)
     embeds = mod.__schema__(:embeds)
 
-    attrs =
-      mod
-      |> normalize(attrs)
-      |> normalize_attrs()
-
     changeset =
       mod
       |> struct()
@@ -508,8 +503,8 @@ defmodule Cqrs.Command do
 
   def __new__(mod, attrs, required_fields, opts) when is_list(opts) do
     attrs =
-      mod
-      |> normalize(attrs)
+      attrs
+      |> Input.normalize_input(mod)
       |> mod.before_validate()
 
     opts = Metadata.put_default_metadata(opts)
@@ -526,6 +521,7 @@ defmodule Cqrs.Command do
           changeset
           |> Changeset.apply_changes()
           |> mod.after_validate()
+          |> Input.normalize_input(mod)
 
         changeset2 = __init__(mod, attrs, required_fields, opts)
 
@@ -550,7 +546,7 @@ defmodule Cqrs.Command do
   end
 
   defp discarded_data(mod, attrs) do
-    fields = mod.__schema__(:fields)
+    fields = mod.__schema__(:fields) |> Enum.map(&to_string/1)
     Map.drop(attrs, fields)
   end
 
@@ -561,22 +557,6 @@ defmodule Cqrs.Command do
       end)
     end)
   end
-
-  defp normalize(_mod, values) when is_list(values), do: Enum.into(values, %{})
-  defp normalize(_mod, values) when is_struct(values), do: Map.from_struct(values)
-  defp normalize(_mod, values) when is_map(values), do: values
-  defp normalize(mod, _other), do: raise(InvalidValuesError, module: mod)
-
-  defp normalize_attrs(list) when is_list(list), do: Enum.map(list, &normalize_attrs/1)
-
-  defp normalize_attrs(map) when is_map(map) do
-    Enum.into(map, %{}, fn
-      {key, value} when is_struct(key) -> {key, normalize_attrs(Map.from_struct(value))}
-      {key, value} -> {key, value}
-    end)
-  end
-
-  defp normalize_attrs(other), do: other
 
   def __do_dispatch__(mod, %{__struct__: mod} = command, opts) do
     opts = Metadata.put_default_metadata(opts)
