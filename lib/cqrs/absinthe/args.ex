@@ -20,7 +20,8 @@ if Code.ensure_loaded?(Absinthe) do
         absinthe_type = absinthe_type(field, opts)
 
         required = Keyword.get(field_opts, :required, false)
-        default_value = Keyword.get(field_opts, :default)
+
+        default_value = Keyword.get(field_opts, :default) |> Macro.escape()
 
         absinthe_opts =
           field_opts

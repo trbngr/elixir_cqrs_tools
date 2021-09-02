@@ -126,7 +126,6 @@ if Code.ensure_loaded?(Absinthe) do
           opts =
             unquote(opts)
             |> Keyword.merge(source: unquote(command_module), macro: :derive_mutation_input)
-            |> Keyword.drop([:only, :except])
 
           Guards.ensure_is_command!(unquote(command_module))
           Mutation.create_input_object(unquote(command_module), opts)
@@ -161,10 +160,7 @@ if Code.ensure_loaded?(Absinthe) do
         quote location: :keep do
           Guards.ensure_is_command!(unquote(command_module))
 
-          opts =
-            unquote(opts)
-            |> Keyword.merge(source: unquote(command_module), macro: :derive_mutation)
-            |> Keyword.drop([:only, :except])
+          opts = Keyword.merge(unquote(opts), source: unquote(command_module), macro: :derive_mutation)
 
           Mutation.create_mutatation(
             unquote(command_module),
