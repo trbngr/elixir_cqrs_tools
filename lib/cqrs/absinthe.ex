@@ -67,6 +67,8 @@ if Code.ensure_loaded?(Absinthe) do
             derive_mutation_input: 2,
             derive_mutation: 2,
             derive_mutation: 3,
+            computed_field: 2,
+            computed_field: 3,
             derive_query: 2,
             derive_query: 3,
             derive_enum: 2,
@@ -166,6 +168,42 @@ if Code.ensure_loaded?(Absinthe) do
             unquote(command_module),
             unquote(return_type),
             Keyword.put_new(opts, :tag?, true)
+          )
+        end
+
+      Module.eval_quoted(__CALLER__, mutation)
+    end
+
+    @doc """
+    Defines a field backed by a [Command](`Cqrs.Command`) resolver.
+
+    ## Options
+
+    * `:as` - The name to use for the mutation. Defaults to the query_module name snake_cased.
+    * `:before_resolve` - [Absinthe Middleware](`Absinthe.Middleware`) to run before the resolver.
+    * `:after_resolve` - [Absinthe Middleware](`Absinthe.Middleware`) to run after the resolver.
+    * `:parent_mappings` - A keyword list of command fields to functions that receive the field's parent object as an argument.
+    * `:field_transforms` - A keyword list of command fields to functions that receive the field's current value as an argument.
+
+    """
+    defmacro computed_field(command_module, return_type, opts \\ []) do
+      opts = Macro.escape(opts)
+      return_type = Macro.escape(return_type)
+
+      mutation =
+        quote location: :keep do
+          Guards.ensure_is_command!(unquote(command_module))
+
+          opts =
+            unquote(opts)
+            |> Keyword.merge(source: unquote(command_module), macro: :computed_field)
+            |> Keyword.put(:tag?, true)
+            |> Keyword.put(:input_object?, false)
+
+          Mutation.create_mutatation(
+            unquote(command_module),
+            unquote(return_type),
+            opts
           )
         end
 

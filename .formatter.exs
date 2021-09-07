@@ -22,6 +22,8 @@ locals_without_parens = [
   derive_mutation_input: 2,
   derive_mutation: 2,
   derive_mutation: 3,
+  computed_field: 2,
+  computed_field: 3,
   derive_enum: 2,
   connection_with_total_count: 1,
   connection_with_total_count: 2,
