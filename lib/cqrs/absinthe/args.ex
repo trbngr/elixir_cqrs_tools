@@ -28,7 +28,13 @@ if Code.ensure_loaded?(Absinthe) do
           |> Keyword.take([:description, :deprecate, :name])
           |> Keyword.put(:default_value, default_value)
 
-        {name, absinthe_type, required, absinthe_opts}
+        {absinthe_type, absinthe_type_opts} =
+          case absinthe_type do
+            {absinthe_type, opts} -> {absinthe_type, opts}
+            absinthe_type -> {absinthe_type, []}
+          end
+
+        {name, absinthe_type, required, Keyword.merge(absinthe_opts, absinthe_type_opts)}
       end)
     end
 
@@ -36,11 +42,8 @@ if Code.ensure_loaded?(Absinthe) do
       source = Keyword.get(opts, :source)
       macro = Keyword.get(opts, :macro)
 
-      map_type =
-        get_named_arg_type_mapping(name, opts) || get_configured_type_mapping(:map) ||
-          raise Cqrs.Absinthe.MapTypeMappingError, source: source, macro: macro, type: name
-
-      quote do: unquote(map_type)
+      get_named_arg_type_mapping(name, opts) || get_configured_type_mapping(:map) ||
+        raise Cqrs.Absinthe.MapTypeMappingError, source: source, macro: macro, type: name
     end
 
     defp absinthe_type({name, {:array, type}, _}, opts) do

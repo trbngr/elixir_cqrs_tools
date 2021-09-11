@@ -82,6 +82,7 @@ defmodule Cqrs.ValueObject do
         value_object
         |> Ecto.Changeset.cast(attrs, fields)
         |> Ecto.Changeset.validate_required(@required_fields)
+        |> __MODULE__.handle_validate([])
       end
     end
   end

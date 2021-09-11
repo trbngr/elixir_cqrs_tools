@@ -3,6 +3,7 @@ defmodule Persona do
 
   field :name, :string
   field :dob, :date
+  field :data, :map, default: %{}
 end
 
 defmodule ChangeWidgetStatus do
@@ -22,7 +23,7 @@ defmodule WidgetTypes do
   use Absinthe.Schema.Notation
 
   derive_enum :widget_status, {ChangeWidgetStatus, :status}
-  derive_input_object :persona_input, Persona
+  derive_input_object :persona_input, Persona, arg_types: [data: {:json, default_value: "{}"}]
 
   object :widget do
     field :status, :widget_status
@@ -221,6 +222,7 @@ defmodule AbsintheSchema do
   use Absinthe.Schema
   use Absinthe.Relay.Schema, :modern
 
+  import_types AbsintheJsonType
   import_types UserTypes
   import_types WidgetTypes
   import_types Absinthe.Type.Custom

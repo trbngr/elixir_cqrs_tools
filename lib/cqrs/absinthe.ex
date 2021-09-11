@@ -57,7 +57,7 @@ if Code.ensure_loaded?(Absinthe) do
 
     """
     alias Cqrs.Guards
-    alias Cqrs.Absinthe.{Enum, Mutation, Object, Query}
+    alias Cqrs.Absinthe.{Enum, CommandField, Object, Query}
 
     defmacro __using__(_) do
       quote do
@@ -90,6 +90,7 @@ if Code.ensure_loaded?(Absinthe) do
     * `:except` - Create filters for all except those listed
     * `:before_resolve` - [Absinthe Middleware](`Absinthe.Middleware`) to run before the resolver.
     * `:after_resolve` - [Absinthe Middleware](`Absinthe.Middleware`) to run after the resolver.
+    * `:arg_types` - A list of filter names to absinthe types. See example.
     * `:parent_mappings` - A keyword list of query filters to functions that receive the field's parent object as an argument.
     * `:filter_transforms` - A keyword list of query filters to functions that receive the filter's current value as an argument.
     """
@@ -119,6 +120,7 @@ if Code.ensure_loaded?(Absinthe) do
     ## Options
 
     * `:as` - The name to use for the query. Defaults to the command_module name snake_cased with `_input` appended.
+    * `:arg_types` - A list of filter names to absinthe types. See example.
     """
     defmacro derive_mutation_input(command_module, opts \\ []) do
       opts = Macro.escape(opts)
@@ -130,7 +132,7 @@ if Code.ensure_loaded?(Absinthe) do
             |> Keyword.merge(source: unquote(command_module), macro: :derive_mutation_input)
 
           Guards.ensure_is_command!(unquote(command_module))
-          Mutation.create_input_object(unquote(command_module), opts)
+          CommandField.create_input_object(unquote(command_module), opts)
         end
 
       Module.eval_quoted(__CALLER__, input)
@@ -148,6 +150,7 @@ if Code.ensure_loaded?(Absinthe) do
       * If `true`, one arg with the name of `:input` will be generated.
 
       * If `true`, an `input_object` for the [Command](`Cqrs.Command`) is expected to exist. See `derive_mutation_input/2`.
+    * `:arg_types` - A list of filter names to absinthe types. See example.
     * `:before_resolve` - [Absinthe Middleware](`Absinthe.Middleware`) to run before the resolver.
     * `:after_resolve` - [Absinthe Middleware](`Absinthe.Middleware`) to run after the resolver.
     * `:parent_mappings` - A keyword list of command fields to functions that receive the field's parent object as an argument.
@@ -164,7 +167,7 @@ if Code.ensure_loaded?(Absinthe) do
 
           opts = Keyword.merge(unquote(opts), source: unquote(command_module), macro: :derive_mutation)
 
-          Mutation.create_mutatation(
+          CommandField.create_command_field(
             unquote(command_module),
             unquote(return_type),
             Keyword.put_new(opts, :tag?, true)
@@ -182,6 +185,7 @@ if Code.ensure_loaded?(Absinthe) do
     * `:as` - The name to use for the mutation. Defaults to the query_module name snake_cased.
     * `:before_resolve` - [Absinthe Middleware](`Absinthe.Middleware`) to run before the resolver.
     * `:after_resolve` - [Absinthe Middleware](`Absinthe.Middleware`) to run after the resolver.
+    * `:arg_types` - A list of filter names to absinthe types. See example.
     * `:parent_mappings` - A keyword list of command fields to functions that receive the field's parent object as an argument.
     * `:field_transforms` - A keyword list of command fields to functions that receive the field's current value as an argument.
 
@@ -200,7 +204,7 @@ if Code.ensure_loaded?(Absinthe) do
             |> Keyword.put(:tag?, true)
             |> Keyword.put(:input_object?, false)
 
-          Mutation.create_mutatation(
+          CommandField.create_command_field(
             unquote(command_module),
             unquote(return_type),
             opts

@@ -155,4 +155,22 @@ defmodule Cqrs.AbsintheTest do
       assert name == parent_name
     end
   end
+
+  describe "arg type mappings" do
+    test "default value can be overridden" do
+      query = """
+      {
+        __type(name:"PersonaInput"){
+          inputFields{
+            name
+            defaultValue
+          }
+        }
+      }
+      """
+
+      assert %{data: %{"__type" => %{"inputFields" => fields}}} = Absinthe.run!(query, AbsintheSchema)
+      assert %{"defaultValue" => "\"{}\""} = Elixir.Enum.find(fields, &match?(%{"name" => "data"}, &1))
+    end
+  end
 end

@@ -1,5 +1,5 @@
 if Code.ensure_loaded?(Absinthe) do
-  defmodule Cqrs.Absinthe.Mutation do
+  defmodule Cqrs.Absinthe.CommandField do
     @moduledoc false
     alias Cqrs.{
       BoundedContext,
@@ -32,9 +32,9 @@ if Code.ensure_loaded?(Absinthe) do
       end)
     end
 
-    def create_mutatation(command_module, returns, opts) do
+    def create_command_field(command_module, returns, opts) do
       function_name = BoundedContext.__function_name__(command_module, opts)
-      args = create_mutatation_args(command_module, function_name, opts)
+      args = create_command_field_args(command_module, function_name, opts)
       description = command_module.__simple_moduledoc__()
 
       quote do
@@ -66,7 +66,7 @@ if Code.ensure_loaded?(Absinthe) do
       end
     end
 
-    defp create_mutatation_args(command_module, function_name, opts) do
+    defp create_command_field_args(command_module, function_name, opts) do
       if Keyword.get(opts, :input_object?, false) do
         args =
           quote do
@@ -75,11 +75,11 @@ if Code.ensure_loaded?(Absinthe) do
 
         [args]
       else
-        create_mutatation_args(command_module, opts)
+        create_command_field_args(command_module, opts)
       end
     end
 
-    defp create_mutatation_args(command_module, opts) do
+    defp create_command_field_args(command_module, opts) do
       command_module.__fields__()
       |> FieldMapping.reject_parent_mappings(opts)
       |> Args.extract_args(opts)
