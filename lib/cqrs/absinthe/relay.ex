@@ -101,6 +101,7 @@ if Code.ensure_loaded?(Absinthe.Relay) do
       Module.eval_quoted(__CALLER__, field)
     end
 
+    @doc false
     def define_connection_with_total_count(node_type, opts \\ []) do
       fields = Keyword.get(opts, :do)
 
@@ -115,11 +116,13 @@ if Code.ensure_loaded?(Absinthe.Relay) do
       end
     end
 
+    @doc false
     def resolve_total_count(%{connection_query: query, repo: repo}, _args, _res) do
       total_count = repo.aggregate(query, :count, :id)
       {:ok, total_count}
     end
 
+    @doc false
     def resolve_total_count(_connection, _args, _res) do
       Logger.warn("Requested total_count on a connection that was not created by cqrs_tools.")
       {:ok, nil}

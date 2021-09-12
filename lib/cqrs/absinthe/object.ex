@@ -2,6 +2,7 @@ if Code.ensure_loaded?(Absinthe) do
   alias Cqrs.Absinthe.Args
 
   defmodule Cqrs.Absinthe.Object do
+    @moduledoc false
     def create_object(object_name, source_module, opts \\ []) do
       fields = fields(source_module, opts)
 
