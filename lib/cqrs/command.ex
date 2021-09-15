@@ -506,6 +506,7 @@ defmodule Cqrs.Command do
       attrs
       |> Input.normalize_input(mod)
       |> mod.before_validate()
+      |> Input.normalize_input(mod)
 
     opts = Metadata.put_default_metadata(opts)
 
