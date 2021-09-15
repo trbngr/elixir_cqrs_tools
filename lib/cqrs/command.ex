@@ -117,7 +117,7 @@ defmodule Cqrs.Command do
   @callback handle_validate(Ecto.Changeset.t(), keyword()) :: Ecto.Changeset.t()
 
   @doc """
-  Allows one to modify the incoming attrs before they are validated.
+  Allows one to modify the incoming attrs before they are validated. Note that all attribute keys a converted to strings before this callback is invoked.
 
   This callback is optional.
 
