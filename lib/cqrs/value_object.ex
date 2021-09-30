@@ -37,6 +37,7 @@ defmodule Cqrs.ValueObject do
 
       Module.register_attribute(__MODULE__, :schema_fields, accumulate: true)
       Module.register_attribute(__MODULE__, :required_fields, accumulate: true)
+      Module.register_attribute(__MODULE__, :schema_value_objects, accumulate: true)
 
       import ValueObject, only: :macros
 
@@ -65,6 +66,7 @@ defmodule Cqrs.ValueObject do
       Module.delete_attribute(__MODULE__, :schema_fields)
       Module.delete_attribute(__MODULE__, :required_fields)
       Module.delete_attribute(__MODULE__, :require_all_fields)
+      Module.delete_attribute(__MODULE__, :schema_value_objects)
       Module.delete_attribute(__MODULE__, :create_jason_encoders)
     end
   end
@@ -78,9 +80,12 @@ defmodule Cqrs.ValueObject do
 
       def changeset(value_object, %{} = attrs) do
         fields = __MODULE__.__schema__(:fields)
+        embeds = __MODULE__.__schema__(:embeds)
 
-        value_object
-        |> Ecto.Changeset.cast(attrs, fields)
+        changeset = Ecto.Changeset.cast(value_object, attrs, fields -- embeds)
+
+        embeds
+        |> Enum.reduce(changeset, &Ecto.Changeset.cast_embed(&2, &1))
         |> Ecto.Changeset.validate_required(@required_fields)
         |> __MODULE__.handle_validate([])
       end
@@ -105,6 +110,14 @@ defmodule Cqrs.ValueObject do
           {name, type, opts} ->
             Ecto.Schema.field(name, type, opts)
         end)
+
+        Enum.map(@schema_value_objects, fn
+          {name, {:array, type}, _opts} ->
+            Ecto.Schema.embeds_many(name, type)
+
+          {name, type, _opts} ->
+            Ecto.Schema.embeds_one(name, type)
+        end)
       end
     end
   end
@@ -113,7 +126,7 @@ defmodule Cqrs.ValueObject do
     quote do
       @name __MODULE__ |> Module.split() |> Enum.reverse() |> hd() |> to_string()
 
-      def __fields__, do: @schema_fields
+      def __fields__, do: @schema_fields ++ @schema_value_objects
       def __required_fields__, do: @required_fields
       def __module_docs__, do: @moduledoc
       def __value_object__, do: __MODULE__
@@ -181,7 +194,11 @@ defmodule Cqrs.ValueObject do
       # reset the @desc attr
       @desc nil
 
-      @schema_fields {unquote(name), unquote(type), opts}
+      if Cqrs.Command.__is_value_object__?(unquote(type)) do
+        @schema_value_objects {unquote(name), unquote(type), opts}
+      else
+        @schema_fields {unquote(name), unquote(type), opts}
+      end
     end
   end
 
@@ -189,11 +206,15 @@ defmodule Cqrs.ValueObject do
 
   def __init__(mod, attrs, required_fields, opts) do
     fields = mod.__schema__(:fields)
+    embeds = mod.__schema__(:embeds)
 
-    attrs = normalize(mod, attrs)
+    changeset =
+      mod
+      |> struct()
+      |> Changeset.cast(attrs, fields -- embeds)
 
-    struct(mod)
-    |> Changeset.cast(attrs, fields)
+    embeds
+    |> Enum.reduce(changeset, &Changeset.cast_embed(&2, &1))
     |> Changeset.validate_required(required_fields)
     |> mod.handle_validate(opts)
   end
