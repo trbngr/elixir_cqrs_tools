@@ -165,13 +165,24 @@ if Code.ensure_loaded?(Absinthe) do
         quote location: :keep do
           Guards.ensure_is_command!(unquote(command_module))
 
-          opts = Keyword.merge(unquote(opts), source: unquote(command_module), macro: :derive_mutation)
+          opts =
+            unquote(opts)
+            |> Keyword.put(:tag?, true)
+            |> Keyword.merge(source: unquote(command_module), macro: :derive_mutation)
 
-          CommandField.create_command_field(
-            unquote(command_module),
-            unquote(return_type),
-            Keyword.put_new(opts, :tag?, true)
-          )
+          if Keyword.get(opts, :relay?) do
+            CommandField.create_relay_mutation(
+              unquote(command_module),
+              unquote(return_type),
+              opts
+            )
+          else
+            CommandField.create_command_field(
+              unquote(command_module),
+              unquote(return_type),
+              opts
+            )
+          end
         end
 
       Module.eval_quoted(__CALLER__, mutation)

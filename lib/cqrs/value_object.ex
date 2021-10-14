@@ -25,7 +25,7 @@ defmodule Cqrs.ValueObject do
   """
   @callback after_validate(struct()) :: struct()
 
-  alias Cqrs.{Documentation, InvalidValuesError, ValueObject, ValueObjectError, Input}
+  alias Cqrs.{Documentation, ValueObject, ValueObjectError, Input}
 
   defmacro __using__(opts \\ []) do
     require_all_fields = Keyword.get(opts, :require_all_fields, true)
@@ -261,9 +261,4 @@ defmodule Cqrs.ValueObject do
       end)
     end)
   end
-
-  defp normalize(_mod, values) when is_list(values), do: Enum.into(values, %{})
-  defp normalize(_mod, values) when is_struct(values), do: Map.from_struct(values)
-  defp normalize(_mod, values) when is_map(values), do: values
-  defp normalize(mod, _other), do: raise(InvalidValuesError, module: mod)
 end

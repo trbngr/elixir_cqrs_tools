@@ -31,7 +31,9 @@ locals_without_parens = [
   derive_object: 2,
   derive_object: 3,
   derive_input_object: 2,
-  derive_input_object: 3
+  derive_input_object: 3,
+  derive_relay_mutation: 2,
+  derive_relay_mutation: 3
 ]
 
 [

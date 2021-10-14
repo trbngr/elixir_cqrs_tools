@@ -66,6 +66,49 @@ if Code.ensure_loaded?(Absinthe) do
       end
     end
 
+    def create_relay_mutation(command_module, returns, opts) do
+      function_name = BoundedContext.__function_name__(command_module, opts)
+      input_fields = create_input_object_fields(command_module, opts)
+      description = command_module.__simple_moduledoc__()
+
+      quote do
+        require Middleware
+
+        payload field unquote(function_name) do
+          description unquote(description)
+
+          input do
+            (unquote_splicing(input_fields))
+          end
+
+          output do
+            field :payload, unquote(returns)
+          end
+
+          Middleware.before_resolve(unquote(command_module), unquote(opts))
+
+          resolve(fn parent, args, resolution ->
+            attrs =
+              args
+              |> Map.get(:input, args)
+              |> FieldMapping.resolve_parent_mappings(unquote(command_module), parent, args, unquote(opts))
+              |> FieldMapping.run_field_transformations(unquote(command_module), unquote(opts))
+
+            opts =
+              resolution
+              |> Metadata.merge(unquote(opts))
+              |> Errors.attach_error_handler()
+
+            with {:ok, result} <- BoundedContext.__dispatch_command__(unquote(command_module), attrs, opts) do
+              {:ok, %{payload: result}}
+            end
+          end)
+
+          Middleware.after_resolve(unquote(command_module), unquote(opts))
+        end
+      end
+    end
+
     defp create_command_field_args(command_module, function_name, opts) do
       if Keyword.get(opts, :input_object?, false) do
         args =
