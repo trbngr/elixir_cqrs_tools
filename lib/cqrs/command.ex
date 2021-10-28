@@ -144,6 +144,15 @@ defmodule Cqrs.Command do
   @callback before_dispatch(command(), keyword()) :: {:ok, command()} | {:error, any()}
 
   @doc """
+  This callback is intended to authorize the execution of the command.
+
+  This callback is optional.
+
+  Invoked after `before_dispatch/2` and before `handle_dispatch/2`.
+  """
+  @callback handle_authorize(command(), keyword()) :: {:ok, command()} | :error
+
+  @doc """
   This callback is intended to be used to run the fully validated command.
 
   This callback is required.
@@ -192,7 +201,10 @@ defmodule Cqrs.Command do
       @impl true
       def before_dispatch(command, _opts), do: {:ok, command}
 
-      defoverridable handle_validate: 2, before_dispatch: 2, after_validate: 1, before_validate: 1
+      @impl true
+      def handle_authorize(command, _opts), do: {:ok, command}
+
+      defoverridable handle_validate: 2, before_dispatch: 2, after_validate: 1, before_validate: 1, handle_authorize: 2
     end
   end
 
@@ -562,19 +574,25 @@ defmodule Cqrs.Command do
   def __do_dispatch__(mod, %{__struct__: mod} = command, opts) do
     opts = Metadata.put_default_metadata(opts)
 
-    run_dispatch = fn command ->
-      tag? = Keyword.get(opts, :tag?)
-
-      command
-      |> mod.handle_dispatch(opts)
-      |> tag_result(tag?)
-    end
-
     case mod.before_dispatch(command, opts) do
       {:error, errors} when is_list(errors) -> {:error, List.flatten(errors)}
       {:error, error} -> {:error, error}
-      {:ok, command} -> run_dispatch.(command)
-      %{__struct__: ^mod} -> run_dispatch.(command)
+      {:ok, command} -> run_dispatch(mod, command, opts)
+      %{__struct__: ^mod} -> run_dispatch(mod, command, opts)
+    end
+  end
+
+  defp run_dispatch(mod, command, opts) do
+    tag? = Keyword.get(opts, :tag?)
+
+    case mod.handle_authorize(command, opts) do
+      :error ->
+        {:error, :unauthorized}
+
+      {:ok, command} ->
+        command
+        |> mod.handle_dispatch(opts)
+        |> tag_result(tag?)
     end
   end
 
