@@ -76,6 +76,7 @@ defmodule Cqrs.Query do
 
   @callback handle_create(filters(), opts()) :: query()
   @callback handle_validate(Changeset.t(), opts()) :: Changeset.t()
+  @callback before_execute(query(), opts()) :: query
   @callback handle_execute(query(), opts()) :: {:error, query()} | {:error, any()} | any()
   @callback handle_execute!(query(), opts()) :: any()
 
@@ -107,9 +108,12 @@ defmodule Cqrs.Query do
       def handle_validate(changeset, _opts), do: changeset
 
       @impl true
+      def before_execute(query, _opts), do: query
+
+      @impl true
       def handle_execute!(query, opts), do: handle_execute(query, opts)
 
-      defoverridable handle_validate: 2, handle_execute!: 2
+      defoverridable handle_validate: 2, handle_execute!: 2, before_execute: 2
     end
   end
 
@@ -343,6 +347,8 @@ defmodule Cqrs.Query do
   defp do_execute(mod, execute_fun, query, opts) do
     opts = Metadata.put_default_metadata(opts)
     tag? = Keyword.get(opts, :tag?)
+
+    query = mod.before_execute(query, opts)
 
     mod
     |> apply(execute_fun, [query, opts])
