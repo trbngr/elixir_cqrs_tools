@@ -586,13 +586,13 @@ defmodule Cqrs.Command do
     tag? = Keyword.get(opts, :tag?)
 
     case mod.handle_authorize(command, opts) do
-      :error ->
-        {:error, :unauthorized}
-
       {:ok, command} ->
         command
         |> mod.handle_dispatch(opts)
         |> tag_result(tag?)
+
+      _ ->
+        {:error, :unauthorized}
     end
   end
 
