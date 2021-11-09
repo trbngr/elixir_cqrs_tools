@@ -369,6 +369,7 @@ defmodule Cqrs.Command do
           false -> name
         end
       end)
+      |> Macro.escape()
 
     create_event = fn {name, opts, {file, line}} ->
       options =

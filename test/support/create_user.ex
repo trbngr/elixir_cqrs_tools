@@ -5,6 +5,7 @@ defmodule CreateUser do
   field :name, :string
 
   internal_field :id, :binary_id
+  internal_field :data, :map, default: %{}
 
   derive_event UserCreated
 
