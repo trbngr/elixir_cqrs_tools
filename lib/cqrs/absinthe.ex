@@ -93,6 +93,7 @@ if Code.ensure_loaded?(Absinthe) do
     * `:arg_types` - A list of filter names to absinthe types. See example.
     * `:parent_mappings` - A keyword list of query filters to functions that receive the field's parent object as an argument.
     * `:filter_transforms` - A keyword list of query filters to functions that receive the filter's current value as an argument.
+    * `:required` - A list of query filters to make required; regardless of how they are defined in the query module.
     """
     defmacro derive_query(query_module, return_type, opts \\ []) do
       opts = Macro.escape(opts)
@@ -121,6 +122,7 @@ if Code.ensure_loaded?(Absinthe) do
 
     * `:as` - The name to use for the query. Defaults to the command_module name snake_cased with `_input` appended.
     * `:arg_types` - A list of filter names to absinthe types. See example.
+    * `:required` - A list of command fields to make required; regardless of how they are defined in the command module.
     """
     defmacro derive_mutation_input(command_module, opts \\ []) do
       opts = Macro.escape(opts)
@@ -155,6 +157,7 @@ if Code.ensure_loaded?(Absinthe) do
     * `:after_resolve` - [Absinthe Middleware](`Absinthe.Middleware`) to run after the resolver.
     * `:parent_mappings` - A keyword list of command fields to functions that receive the field's parent object as an argument.
     * `:field_transforms` - A keyword list of command fields to functions that receive the field's current value as an argument.
+    * `:required` - A list of command fields to make required; regardless of how they are defined in the command module.
 
     """
     defmacro derive_mutation(command_module, return_type, opts \\ []) do

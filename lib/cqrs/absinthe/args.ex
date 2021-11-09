@@ -4,6 +4,7 @@ if Code.ensure_loaded?(Absinthe) do
     def extract_args(fields, opts) do
       only = Keyword.get(opts, :only, [])
       except = Keyword.get(opts, :except, [])
+      required = Keyword.get(opts, :required, [])
 
       fields =
         case {only, except} do
@@ -19,7 +20,8 @@ if Code.ensure_loaded?(Absinthe) do
         {name, _type, field_opts} = field
         absinthe_type = absinthe_type(field, opts)
 
-        required = Keyword.get(field_opts, :required, false)
+        explicitly_required = Enum.member?(required, name)
+        required = explicitly_required || Keyword.get(field_opts, :required, false)
 
         default_value = Keyword.get(field_opts, :default) |> Macro.escape()
 
