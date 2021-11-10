@@ -214,6 +214,7 @@ defmodule Cqrs.Command do
       Command.__schema__()
       Command.__introspection__()
       Command.__constructor__()
+      Command.__changeset__()
       Command.__dispatch__()
       Command.__create_events__(__ENV__, @events, @schema_fields, @default_event_values)
 
@@ -333,6 +334,32 @@ defmodule Cqrs.Command do
       """
       def new!(attrs \\ [], opts \\ []) when is_list(opts),
         do: Command.__new__!(__MODULE__, attrs, @required_fields, get_opts(opts))
+    end
+  end
+
+  defmacro __changeset__ do
+    quote generated: true, location: :keep do
+      def changeset(attrs, opts \\ []) when is_map(attrs) or is_list(attrs) do
+        alias Ecto.Changeset, as: CS
+
+        attrs =
+          attrs
+          |> Input.normalize_input(__MODULE__)
+          |> __MODULE__.before_validate()
+          |> Input.normalize_input(__MODULE__)
+
+        fields = Enum.map(@schema_fields, &elem(&1, 0))
+        associations = Enum.map(@schema_value_objects, &elem(&1, 0))
+
+        changeset =
+          %__MODULE__{}
+          |> CS.cast(attrs, fields)
+          |> __MODULE__.handle_validate(opts)
+
+        associations
+        |> Enum.reduce(changeset, &CS.cast_assoc(&2, &1))
+        |> CS.validate_required(@required_fields)
+      end
     end
   end
 
