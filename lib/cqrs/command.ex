@@ -280,19 +280,21 @@ defmodule Cqrs.Command do
 
       def __fields__, do: @schema_fields ++ @schema_value_objects
 
-      def __fields__(:public) do
+      def __field_names__(:public) do
         Enum.filter(__fields__(), fn {_, _, opts} ->
           Keyword.get(opts, :internal, false) == false
         end)
+        |> Enum.map(&elem(&1, 0))
       end
 
-      def __fields__(:internal) do
+      def __field_names__(:internal) do
         Enum.filter(__fields__(), fn {_, _, opts} ->
           Keyword.get(opts, :internal, false) == true
         end)
+        |> Enum.map(&elem(&1, 0))
       end
 
-      def __fields__(:required), do: @required_fields
+      def __field_names__(:required), do: Enum.map(@required_fields, &elem(&1, 0))
 
       def __simple_moduledoc__, do: @simple_moduledoc
       def __required_fields__, do: @required_fields
