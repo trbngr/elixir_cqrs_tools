@@ -150,7 +150,7 @@ defmodule Cqrs.Command do
 
   Invoked after `before_dispatch/2` and before `handle_dispatch/2`.
   """
-  @callback handle_authorize(command(), keyword()) :: {:ok, command()} | :error
+  @callback handle_authorize(command(), keyword()) :: {:ok, command()} | {:ok, :halt} | any()
 
   @doc """
   This callback is intended to be used to run the fully validated command.
@@ -631,6 +631,9 @@ defmodule Cqrs.Command do
     tag? = Keyword.get(opts, :tag?)
 
     case mod.handle_authorize(command, opts) do
+      {:ok, :halt} ->
+        tag_result({:ok, command}, tag?)
+
       {:ok, command} ->
         command
         |> mod.handle_dispatch(opts)
