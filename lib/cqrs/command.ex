@@ -135,6 +135,13 @@ defmodule Cqrs.Command do
   @callback after_validate(command()) :: command()
 
   @doc """
+  Called after `new` has completed.
+
+  This callback is optional.
+  """
+  @callback after_create(command(), keyword()) :: {:ok, command()}
+
+  @doc """
   This callback is intended to be used as a last chance to do any validation that performs IO.
 
   This callback is optional.
@@ -199,12 +206,20 @@ defmodule Cqrs.Command do
       def after_validate(command), do: command
 
       @impl true
+      def after_create(command, _opts), do: {:ok, command}
+
+      @impl true
       def before_dispatch(command, _opts), do: {:ok, command}
 
       @impl true
       def handle_authorize(command, _opts), do: {:ok, command}
 
-      defoverridable handle_validate: 2, before_dispatch: 2, after_validate: 1, before_validate: 1, handle_authorize: 2
+      defoverridable handle_validate: 2,
+                     before_dispatch: 2,
+                     after_validate: 1,
+                     before_validate: 1,
+                     handle_authorize: 2,
+                     after_create: 2
     end
   end
 
@@ -589,7 +604,9 @@ defmodule Cqrs.Command do
     end
     |> case do
       {:ok, command} ->
-        {:ok, Map.put(command, :discarded_fields, discarded_data(mod, attrs))}
+        command
+        |> Map.put(:discarded_fields, discarded_data(mod, attrs))
+        |> mod.after_create(opts)
 
       {:error, changeset} ->
         {:error, format_errors(changeset)}
