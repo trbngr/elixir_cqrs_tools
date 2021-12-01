@@ -4,6 +4,7 @@ if Code.ensure_loaded?(Absinthe) do
     alias Cqrs.{
       BoundedContext,
       Absinthe.Args,
+      Absinthe.DefaultOpts,
       Absinthe.Metadata,
       Absinthe.Middleware,
       Absinthe.FieldMapping
@@ -38,7 +39,10 @@ if Code.ensure_loaded?(Absinthe) do
               |> FieldMapping.resolve_parent_mappings(unquote(query_module), parent, args, unquote(opts))
               |> FieldMapping.run_field_transformations(unquote(query_module), unquote(opts))
 
-            opts = Metadata.merge(resolution, unquote(opts))
+            opts =
+              resolution
+              |> Metadata.merge(unquote(opts))
+              |> DefaultOpts.set()
 
             case BoundedContext.__create_query__(unquote(query_module), args, opts) do
               {:error, error} ->
@@ -86,6 +90,7 @@ if Code.ensure_loaded?(Absinthe) do
               resolution
               |> Metadata.merge(unquote(opts))
               |> Keyword.put(:tag?, true)
+              |> DefaultOpts.set()
 
             args =
               args

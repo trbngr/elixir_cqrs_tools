@@ -4,6 +4,7 @@ if Code.ensure_loaded?(Absinthe) do
     alias Cqrs.{
       BoundedContext,
       Absinthe.Args,
+      Absinthe.DefaultOpts,
       Absinthe.Metadata,
       Absinthe.Errors,
       Absinthe.Middleware,
@@ -57,6 +58,7 @@ if Code.ensure_loaded?(Absinthe) do
               resolution
               |> Metadata.merge(unquote(opts))
               |> Errors.attach_error_handler()
+              |> DefaultOpts.set()
 
             BoundedContext.__dispatch_command__(unquote(command_module), attrs, opts)
           end)
@@ -98,6 +100,7 @@ if Code.ensure_loaded?(Absinthe) do
               resolution
               |> Metadata.merge(unquote(opts))
               |> Errors.attach_error_handler()
+              |> DefaultOpts.set()
 
             with {:ok, result} <- BoundedContext.__dispatch_command__(unquote(command_module), attrs, opts) do
               {:ok, %{payload: result}}
