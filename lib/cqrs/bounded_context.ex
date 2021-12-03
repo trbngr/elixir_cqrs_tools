@@ -1,5 +1,5 @@
 defmodule Cqrs.BoundedContext do
-  alias Cqrs.{BoundedContext, Guards}
+  alias Cqrs.{BoundedContext, Guards, BoundedContext.DefaultOpts}
 
   @moduledoc """
   Macros to create proxy functions to [commands](`Cqrs.Command`) and [queries](`Cqrs.Query`) in a module.
@@ -251,6 +251,8 @@ defmodule Cqrs.BoundedContext do
   end
 
   def __dispatch_command__(module, attrs, opts) do
+    opts = DefaultOpts.set(opts)
+
     attrs
     |> module.new(opts)
     |> module.dispatch(opts)
@@ -258,6 +260,8 @@ defmodule Cqrs.BoundedContext do
   end
 
   def __dispatch_command__!(module, attrs, opts) do
+    opts = DefaultOpts.set(opts)
+
     attrs
     |> module.new!(opts)
     |> module.dispatch(opts)
@@ -273,6 +277,8 @@ defmodule Cqrs.BoundedContext do
   end
 
   def __execute_query__(module, attrs, opts) do
+    opts = DefaultOpts.set(opts)
+
     attrs
     |> module.new(opts)
     |> module.execute(opts)
@@ -280,6 +286,8 @@ defmodule Cqrs.BoundedContext do
   end
 
   def __execute_query__!(module, attrs, opts) do
+    opts = DefaultOpts.set(opts)
+
     attrs
     |> module.new!(opts)
     |> module.execute!(opts)
