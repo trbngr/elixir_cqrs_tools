@@ -37,15 +37,14 @@ if Code.ensure_loaded?(Absinthe) do
       function_name = BoundedContext.__function_name__(command_module, opts)
       args = create_command_field_args(command_module, function_name, opts)
       description = command_module.__simple_moduledoc__()
+      {before_resolve, after_resolve} = Middleware.middleware(opts)
 
       quote do
-        require Middleware
-
         field unquote(function_name), unquote(returns) do
           unquote_splicing(args)
           description unquote(description)
 
-          Middleware.before_resolve(unquote(command_module), unquote(opts))
+          middleware unquote(before_resolve)
 
           resolve(fn parent, args, resolution ->
             attrs =
@@ -63,7 +62,7 @@ if Code.ensure_loaded?(Absinthe) do
             BoundedContext.__dispatch_command__(unquote(command_module), attrs, opts)
           end)
 
-          Middleware.after_resolve(unquote(command_module), unquote(opts))
+          middleware unquote(after_resolve)
         end
       end
     end
@@ -72,6 +71,7 @@ if Code.ensure_loaded?(Absinthe) do
       function_name = BoundedContext.__function_name__(command_module, opts)
       input_fields = create_input_object_fields(command_module, opts)
       description = command_module.__simple_moduledoc__()
+      {before_resolve, after_resolve} = Middleware.middleware(opts)
 
       quote do
         require Middleware
@@ -87,7 +87,7 @@ if Code.ensure_loaded?(Absinthe) do
             field :payload, unquote(returns)
           end
 
-          Middleware.before_resolve(unquote(command_module), unquote(opts))
+          middleware unquote(before_resolve)
 
           resolve(fn parent, args, resolution ->
             attrs =
@@ -107,7 +107,7 @@ if Code.ensure_loaded?(Absinthe) do
             end
           end)
 
-          Middleware.after_resolve(unquote(command_module), unquote(opts))
+          middleware unquote(after_resolve)
         end
       end
     end

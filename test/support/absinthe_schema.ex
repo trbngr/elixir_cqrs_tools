@@ -72,6 +72,22 @@ defmodule TestAssignParentToField do
   end
 end
 
+defmodule ModuleMiddlewareBeforeResolve do
+  @behaviour Absinthe.Middleware
+  def call(res, _) do
+    send(self(), :module_middleware_before_resolve)
+    res
+  end
+end
+
+defmodule ModuleMiddlewareAfterResolve do
+  @behaviour Absinthe.Middleware
+  def call(res, _) do
+    send(self(), :module_middleware_after_resolve)
+    res
+  end
+end
+
 defmodule UserTypes do
   use Cqrs.Absinthe
   use Cqrs.Absinthe.Relay
@@ -111,11 +127,8 @@ defmodule UserTypes do
     derive_connection GetUsers, :user,
       repo: TempRepo,
       repo_fun: :all_users,
-      before_resolve: &UserResolvers.before_get_user_resolver/2,
-      after_resolve: fn res, _ ->
-        send(self(), :after_resolve)
-        res
-      end
+      before_resolve: ModuleMiddlewareBeforeResolve,
+      after_resolve: ModuleMiddlewareAfterResolve
   end
 
   object :user_mutations do
@@ -201,11 +214,8 @@ defmodule UserTypes do
     derive_connection GetUsers, :user,
       repo: TempRepo,
       repo_fun: :all_users,
-      before_resolve: &UserResolvers.before_get_user_resolver/2,
-      after_resolve: fn res, _ ->
-        send(self(), :after_resolve)
-        res
-      end
+      before_resolve: ModuleMiddlewareBeforeResolve,
+      after_resolve: ModuleMiddlewareAfterResolve
   end
 
   object :user_mutations do

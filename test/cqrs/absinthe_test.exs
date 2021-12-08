@@ -103,8 +103,8 @@ defmodule Cqrs.AbsintheTest do
         AbsintheSchema
       )
 
-      assert_receive(:before_resolve)
-      assert_receive(:after_resolve)
+      assert_receive(:module_middleware_before_resolve)
+      assert_receive(:module_middleware_after_resolve)
     end
 
     test "is executed for mutation" do
