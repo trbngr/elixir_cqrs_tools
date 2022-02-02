@@ -46,8 +46,14 @@ if Code.ensure_loaded?(Absinthe) do
               |> DefaultOpts.set()
 
             case BoundedContext.__create_query__(unquote(query_module), args, opts) do
-              {:error, error} ->
-                {:error, error}
+              {:error, map} when is_map(map) ->
+                {:error,
+                 Enum.reduce(map, [], fn {key, messages}, acc ->
+                   acc ++ Enum.map(messages, fn msg -> "#{key} #{msg}" end)
+                 end)}
+
+              {:error, errors} ->
+                {:error, errors}
 
               {:ok, query} ->
                 repo_fun = fn args ->
