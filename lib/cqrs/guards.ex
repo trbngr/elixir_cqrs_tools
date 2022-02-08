@@ -3,27 +3,27 @@ defmodule Cqrs.Guards do
   alias Cqrs.{InvalidCommandError, InvalidDispatcherError, InvalidQueryError}
 
   def ensure_is_struct!(module) do
-    unless exports_function?(module, :__struct__, 0) do
-      raise "#{module |> Module.split() |> Enum.join(".")} should be a valid struct."
-    end
+    # unless exports_function?(module, :__struct__, 0) do
+    #   raise "#{module |> Module.split() |> Enum.join(".")} should be a valid struct."
+    # end
   end
 
   def ensure_is_command!(module) do
-    unless exports_function?(module, :__command__, 0) do
-      raise InvalidCommandError, command: module
-    end
+    # unless exports_function?(module, :__command__, 0) do
+    #   raise InvalidCommandError, command: module
+    # end
   end
 
   def ensure_is_query!(module) do
-    unless exports_function?(module, :__query__, 0) do
-      raise InvalidQueryError, query: module
-    end
+    # unless exports_function?(module, :__query__, 0) do
+    #   raise InvalidQueryError, query: module
+    # end
   end
 
   def ensure_is_dispatcher!(module) do
-    unless exports_function?(module, :dispatch, 2) do
-      raise InvalidDispatcherError, dispatcher: module
-    end
+    # unless exports_function?(module, :dispatch, 2) do
+    #   raise InvalidDispatcherError, dispatcher: module
+    # end
   end
 
   def exports_function?(module, fun, arity) do

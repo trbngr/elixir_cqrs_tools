@@ -6,9 +6,13 @@ defmodule Cqrs.Metadata do
 
   def put_default_metadata(opts) do
     metadata = get_metadata()
+    # |> IO.inspect(label: "default metadata")
 
     Keyword.update(opts, :metadata, metadata, fn existing_metadata ->
+      # existing_metadata |> IO.inspect(label: "existing_metadata")
+
       Map.merge(metadata, existing_metadata)
+      # |> IO.inspect(label: "metadata")
     end)
   end
 

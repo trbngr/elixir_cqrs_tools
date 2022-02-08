@@ -278,9 +278,9 @@ if Code.ensure_loaded?(Absinthe) do
 
     @doc false
     def ensure_is_schema!(module) do
-      unless Guards.exports_function?(module, :__schema__, 2) do
-        raise Cqrs.Absinthe.InvalidSourceError, module: module
-      end
+      # unless Guards.exports_function?(module, :__schema__, 2) do
+      #   raise Cqrs.Absinthe.InvalidSourceError, module: module
+      # end
     end
   end
 end
