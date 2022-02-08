@@ -640,7 +640,7 @@ defmodule Cqrs.Command do
       {:error, errors} when is_list(errors) -> {:error, List.flatten(errors)}
       {:error, error} -> {:error, error}
       {:ok, command} -> run_dispatch(mod, command, opts)
-      %{__struct__: ^mod} -> run_dispatch(mod, command, opts)
+      %{__struct__: ^mod} = command -> run_dispatch(mod, command, opts)
     end
   end
 
