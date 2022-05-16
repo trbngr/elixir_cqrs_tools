@@ -2,7 +2,7 @@
 
 A collection of handy Elixir macros for CQRS applications. 
 
-This library was the stomping grounds for the set of libraries that live on as [Blunt](github.com/blunt-elixir/blunt).
+This library was the stomping grounds for the set of libraries that live on as [Blunt](https://github.com/blunt-elixir/blunt).
 
 The new libs are not feature complete, but will be soon.
 
