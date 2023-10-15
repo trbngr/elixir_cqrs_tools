@@ -179,16 +179,16 @@ defmodule Cqrs.Query do
       embedded_schema do
         Enum.map(@filters, fn
           {name, {:array, :enum}, opts} ->
-            Ecto.Schema.field(name, {:array, Ecto.Enum}, opts)
+            Ecto.Schema.field(name, {:array, Ecto.Enum}, opts |> Cqrs.EctoUtils.sanitize_opts())
 
           {name, :enum, opts} ->
-            Ecto.Schema.field(name, Ecto.Enum, opts)
+            Ecto.Schema.field(name, Ecto.Enum, opts |> Cqrs.EctoUtils.sanitize_opts())
 
           {name, :binary_id, opts} ->
-            Ecto.Schema.field(name, Ecto.UUID, opts)
+            Ecto.Schema.field(name, Ecto.UUID, opts |> Cqrs.EctoUtils.sanitize_opts())
 
           {name, type, opts} ->
-            Ecto.Schema.field(name, type, opts)
+            Ecto.Schema.field(name, type, opts |> Cqrs.EctoUtils.sanitize_opts())
         end)
       end
     end
